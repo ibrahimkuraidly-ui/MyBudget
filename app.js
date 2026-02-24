@@ -218,6 +218,9 @@ async function loadDashboard() {
       api('GET', 'investment_snapshots', `user_id=eq.${currentUserId}&select=*&order=date.desc`),
     ]);
 
+    const incomeGoalRow = budgets.find(b => b.category === '__income_goal__');
+    const incomeGoal    = incomeGoalRow ? parseFloat(incomeGoalRow.limit_amount) : null;
+
     const income   = txns.filter(t => t.type === 'income').reduce((s, t) => s + parseFloat(t.amount), 0);
     const expenses = txns.filter(t => t.type === 'expense').reduce((s, t) => s + parseFloat(t.amount), 0);
     const net      = income - expenses;
@@ -236,8 +239,8 @@ async function loadDashboard() {
     });
     const topCats = Object.entries(byCat).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
-    // Budget alerts
-    const alerts = budgets.filter(b => (byCat[b.category] || 0) >= parseFloat(b.limit_amount) * 0.85);
+    // Budget alerts (exclude income goal row)
+    const alerts = budgets.filter(b => b.category !== '__income_goal__' && (byCat[b.category] || 0) >= parseFloat(b.limit_amount) * 0.85);
 
     let html = `
       <div class="nw-banner">
@@ -253,6 +256,23 @@ async function loadDashboard() {
         <div class="stat-card"><div class="stat-label">Income</div><div class="stat-value green">${fmtS(income)}</div></div>
         <div class="stat-card"><div class="stat-label">Expenses</div><div class="stat-value red">${fmtS(expenses)}</div></div>
         <div class="stat-card"><div class="stat-label">Net</div><div class="stat-value ${net >= 0 ? 'green' : 'red'}">${net >= 0 ? '' : '-'}${fmtS(Math.abs(net))}</div></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${incomeGoal ? '10px' : '0'}">
+          <div>
+            <div class="card-title" style="margin-bottom:2px">Expected Income</div>
+            ${incomeGoal
+              ? `<div style="font-size:22px;font-weight:800;color:var(--green)">${fmtS(incomeGoal)}</div>`
+              : `<div style="font-size:13px;color:var(--muted)">Not set for this month</div>`}
+          </div>
+          <button class="btn btn-sm btn-secondary" onclick="openSetIncome('${_dashMonth}','${incomeGoalRow ? incomeGoalRow.id : ''}',${incomeGoal || 0})">${incomeGoal ? 'Edit' : 'Set Income'}</button>
+        </div>
+        ${incomeGoal ? `
+        <div class="progress-bar"><div class="progress-fill ${pct(income,incomeGoal) >= 100 ? 'safe' : 'warn'}" style="width:${pct(income,incomeGoal)}%"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:4px">
+          <span>Received: ${fmtS(income)}</span>
+          <span>${pct(income,incomeGoal)}% of expected</span>
+        </div>` : ''}
       </div>`;
 
     if (alerts.length) {
@@ -453,10 +473,11 @@ async function loadBudget() {
       api('GET', 'transactions', `user_id=eq.${currentUserId}&${monthRange(_budgetMonth)}&type=eq.expense&select=category,amount`),
     ]);
 
+    const expenseBudgets = budgets.filter(b => b.category !== '__income_goal__');
     const spentByCat  = {};
     txns.forEach(t => { spentByCat[t.category] = (spentByCat[t.category] || 0) + parseFloat(t.amount); });
-    const totalBudget = budgets.reduce((s, b) => s + parseFloat(b.limit_amount), 0);
-    const totalSpent  = budgets.reduce((s, b) => s + (spentByCat[b.category] || 0), 0);
+    const totalBudget = expenseBudgets.reduce((s, b) => s + parseFloat(b.limit_amount), 0);
+    const totalSpent  = expenseBudgets.reduce((s, b) => s + (spentByCat[b.category] || 0), 0);
 
     let html = `
       <div class="month-bar">
@@ -484,8 +505,8 @@ async function loadBudget() {
       <button class="btn btn-primary btn-sm" onclick="openSetBudget()">+ Set Budget</button>
     </div>`;
 
-    if (budgets.length) {
-      budgets.forEach(b => {
+    if (expenseBudgets.length) {
+      expenseBudgets.forEach(b => {
         const spent = spentByCat[b.category] || 0;
         const limit = parseFloat(b.limit_amount);
         const p     = pct(spent, limit);
@@ -886,5 +907,40 @@ async function deleteAccount(id) {
     await api('DELETE', 'investment_snapshots', `account_id=eq.${id}`);
     await api('DELETE', 'investment_accounts',  `id=eq.${id}`);
     showToast('Deleted', 'success'); loadInvestments();
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+// ─── Monthly Income Goal ──────────────────────────────────────────────────────
+
+function openSetIncome(month, existingId, currentAmount) {
+  document.getElementById('modal-root').innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-title">Expected Income — ${monthLabel(month)}</div>
+        <div class="field">
+          <label>Total Expected Income This Month</label>
+          <input type="number" id="inc-amount" placeholder="0.00" step="0.01" min="0"
+            inputmode="decimal" value="${currentAmount || ''}">
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="submitSetIncome('${month}','${existingId}')">Save</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function submitSetIncome(month, existingId) {
+  const amount = parseFloat(document.getElementById('inc-amount').value);
+  if (!amount) { showToast('Enter an amount', 'error'); return; }
+  try {
+    if (existingId) {
+      await api('PATCH', 'budgets', `id=eq.${existingId}`, { limit_amount: amount });
+    } else {
+      await api('POST', 'budgets', '', { user_id: currentUserId, month, category: '__income_goal__', limit_amount: amount });
+    }
+    closeModal();
+    showToast('Income goal saved', 'success');
+    loadDashboard();
   } catch (e) { showToast(e.message, 'error'); }
 }

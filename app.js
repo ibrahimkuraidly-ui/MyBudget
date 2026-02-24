@@ -629,7 +629,11 @@ function openSetBudget() {
       <div class="modal">
         <div class="modal-title">Set Budget</div>
         <div class="field"><label>Category</label>
-          <select id="b-cat">${EXPENSE_CATS.map(c => `<option>${c}</option>`).join('')}</select>
+          <select id="b-cat" onchange="toggleCustomCat(this)">${EXPENSE_CATS.map(c => `<option>${c}</option>`).join('')}</select>
+        </div>
+        <div class="field hidden" id="custom-cat-field">
+          <label>Custom Category Name</label>
+          <input type="text" id="b-cat-custom" placeholder="e.g. Car Payment, Dog Food">
         </div>
         <div class="field"><label>Monthly Limit</label><input type="number" id="b-limit" placeholder="0.00" step="0.01" min="0" inputmode="decimal"></div>
         <div class="modal-actions">
@@ -638,6 +642,16 @@ function openSetBudget() {
         </div>
       </div>
     </div>`;
+}
+
+function toggleCustomCat(sel) {
+  const field = document.getElementById('custom-cat-field');
+  if (sel.value === 'Other') {
+    field.classList.remove('hidden');
+    document.getElementById('b-cat-custom').focus();
+  } else {
+    field.classList.add('hidden');
+  }
 }
 
 function openEditBudget(id, cat, amount) {
@@ -658,9 +672,12 @@ function openEditBudget(id, cat, amount) {
 }
 
 async function submitBudget() {
-  const cat   = document.getElementById('b-cat').value;
-  const limit = parseFloat(document.getElementById('b-limit').value);
+  const sel    = document.getElementById('b-cat').value;
+  const custom = (document.getElementById('b-cat-custom') || {}).value?.trim();
+  const cat    = sel === 'Other' ? (custom || 'Other') : sel;
+  const limit  = parseFloat(document.getElementById('b-limit').value);
   if (!limit) { showToast('Enter a limit', 'error'); return; }
+  if (sel === 'Other' && !custom) { showToast('Enter a category name', 'error'); return; }
   try {
     await api('POST', 'budgets', '', { user_id: currentUserId, month: _budgetMonth, category: cat, limit_amount: limit });
     closeModal(); showToast('Budget set', 'success'); loadBudget();

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#22c55e">
+  <title>MyBudget</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+
+  <!-- Login -->
+  <div id="login-screen" class="login-screen">
+    <div class="login-card">
+      <div class="login-logo">MyBudget</div>
+      <div class="login-sub">Personal finance tracker</div>
+      <div id="login-error" class="login-error hidden"></div>
+      <div class="login-field">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="login-field">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="Password" autocomplete="current-password">
+      </div>
+      <button id="login-btn" class="login-btn" onclick="doLogin()">Sign In</button>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header id="app-header" style="display:none">
+    <span class="logo">MyBudget</span>
+    <div id="header-right"></div>
+  </header>
+
+  <!-- Tab Bar -->
+  <nav id="tab-bar" class="tab-bar" style="display:none">
+    <button class="tab" data-tab="dashboard">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </button>
+    <button class="tab" data-tab="transactions">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Spending
+    </button>
+    <button class="tab" data-tab="budget">
+      <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      Budget
+    </button>
+    <button class="tab" data-tab="savings">
+      <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      Savings
+    </button>
+    <button class="tab" data-tab="investments">
+      <svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+      Invest
+    </button>
+  </nav>
+
+  <!-- Content -->
+  <div id="content" style="display:none">
+    <div id="page-dashboard" class="page"><div id="dash-content"></div></div>
+    <div id="page-transactions" class="page"><div id="txn-content"></div></div>
+    <div id="page-budget" class="page"><div id="budget-content"></div></div>
+    <div id="page-savings" class="page"><div id="savings-content"></div></div>
+    <div id="page-investments" class="page"><div id="invest-content"></div></div>
+  </div>
+
+  <!-- Modal + Toast -->
+  <div id="modal-root"></div>
+  <div id="toast-container"></div>
+
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js');
+    }
+    initAuth();
+  </script>
+</body>
+</html>

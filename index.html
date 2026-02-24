@@ -78,20 +78,10 @@
 
   <script src="app.js"></script>
   <script>
+    // Unregister any old service workers
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js').then(reg => {
-        // Check for a new version immediately on every load
-        reg.update();
-        reg.addEventListener('updatefound', () => {
-          reg.installing.addEventListener('statechange', function() {
-            if (this.state === 'installed') window.location.reload();
-          });
-        });
-      });
-      // Reload the page whenever a new SW takes control
-      let refreshing = false;
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!refreshing) { refreshing = true; window.location.reload(); }
+      navigator.serviceWorker.getRegistrations().then(regs => {
+        regs.forEach(r => r.unregister());
       });
     }
     initAuth();

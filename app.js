@@ -123,6 +123,7 @@ async function api(method, table, query = '', body = null) {
 
 function fmt(n)      { return '$' + Math.abs(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function fmtS(n)     { return '$' + Math.abs(n || 0).toLocaleString('en-US', { maximumFractionDigits: 0 }); }
+function fmtDate(d)  { return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
 function pct(a, b)   { return b ? Math.min(100, Math.round((a / b) * 100)) : 0; }
 function currMonth() { return new Date().toISOString().slice(0, 7); }
 function monthLabel(ym) {
@@ -211,15 +212,29 @@ async function loadDashboard() {
   el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {
     const mr = monthRange(_dashMonth);
-    const [txns, budgets, goals, snapshots] = await Promise.all([
+    const [txns, budgets, goals, snapshots, allIncomeGoals] = await Promise.all([
       api('GET', 'transactions', `user_id=eq.${currentUserId}&${mr}&select=*&order=date.desc`),
-      api('GET', 'budgets',      `user_id=eq.${currentUserId}&month=eq.${_dashMonth}&select=*`),
+      api('GET', 'budgets',      `user_id=eq.${currentUserId}&month=eq.${_dashMonth}&category=neq.__income_goal__&select=*`),
       api('GET', 'savings_goals', `user_id=eq.${currentUserId}&select=*`),
       api('GET', 'investment_snapshots', `user_id=eq.${currentUserId}&select=*&order=date.desc`),
+      api('GET', 'budgets', `user_id=eq.${currentUserId}&category=eq.__income_goal__&select=*&order=created_at.desc`),
     ]);
 
-    const incomeGoalRow = budgets.find(b => b.category === '__income_goal__');
-    const incomeGoal    = incomeGoalRow ? parseFloat(incomeGoalRow.limit_amount) : null;
+    // Find the active income cycle (where today falls between start and end)
+    const today = new Date().toISOString().slice(0, 10);
+    const activeGoal = allIncomeGoals.find(g => {
+      if (!g.month.includes('_')) return false;
+      const [s, e] = g.month.split('_');
+      return today >= s && today <= e;
+    }) || allIncomeGoals[0] || null;
+
+    let cycleStart = null, cycleEnd = null, cycleIncome = 0;
+    if (activeGoal && activeGoal.month.includes('_')) {
+      [cycleStart, cycleEnd] = activeGoal.month.split('_');
+      const cycleTxns = await api('GET', 'transactions',
+        `user_id=eq.${currentUserId}&date=gte.${cycleStart}&date=lte.${cycleEnd}&type=eq.income&select=amount`);
+      cycleIncome = cycleTxns.reduce((s, t) => s + parseFloat(t.amount), 0);
+    }
 
     const income   = txns.filter(t => t.type === 'income').reduce((s, t) => s + parseFloat(t.amount), 0);
     const expenses = txns.filter(t => t.type === 'expense').reduce((s, t) => s + parseFloat(t.amount), 0);
@@ -239,8 +254,8 @@ async function loadDashboard() {
     });
     const topCats = Object.entries(byCat).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
-    // Budget alerts (exclude income goal row)
-    const alerts = budgets.filter(b => b.category !== '__income_goal__' && (byCat[b.category] || 0) >= parseFloat(b.limit_amount) * 0.85);
+    // Budget alerts
+    const alerts = budgets.filter(b => (byCat[b.category] || 0) >= parseFloat(b.limit_amount) * 0.85);
 
     let html = `
       <div class="nw-banner">
@@ -258,20 +273,21 @@ async function loadDashboard() {
         <div class="stat-card"><div class="stat-label">Net</div><div class="stat-value ${net >= 0 ? 'green' : 'red'}">${net >= 0 ? '' : '-'}${fmtS(Math.abs(net))}</div></div>
       </div>
       <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${incomeGoal ? '10px' : '0'}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${activeGoal ? '10px' : '0'}">
           <div>
             <div class="card-title" style="margin-bottom:2px">Expected Income</div>
-            ${incomeGoal
-              ? `<div style="font-size:22px;font-weight:800;color:var(--green)">${fmtS(incomeGoal)}</div>`
-              : `<div style="font-size:13px;color:var(--muted)">Not set for this month</div>`}
+            ${activeGoal
+              ? `<div style="font-size:22px;font-weight:800;color:var(--green)">${fmtS(activeGoal.limit_amount)}</div>
+                 ${cycleStart && cycleEnd ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">${fmtDate(cycleStart)} – ${fmtDate(cycleEnd)}</div>` : ''}`
+              : `<div style="font-size:13px;color:var(--muted)">Not set — tap to add your income cycle</div>`}
           </div>
-          <button class="btn btn-sm btn-secondary" onclick="openSetIncome('${_dashMonth}','${incomeGoalRow ? incomeGoalRow.id : ''}',${incomeGoal || 0})">${incomeGoal ? 'Edit' : 'Set Income'}</button>
+          <button class="btn btn-sm btn-secondary" onclick="openSetIncome('${activeGoal ? activeGoal.id : ''}',${activeGoal ? activeGoal.limit_amount : 0},'${cycleStart || ''}','${cycleEnd || ''}')">${activeGoal ? 'Edit' : 'Set Income'}</button>
         </div>
-        ${incomeGoal ? `
-        <div class="progress-bar"><div class="progress-fill ${pct(income,incomeGoal) >= 100 ? 'safe' : 'warn'}" style="width:${pct(income,incomeGoal)}%"></div></div>
+        ${activeGoal && cycleStart ? `
+        <div class="progress-bar"><div class="progress-fill ${pct(cycleIncome, parseFloat(activeGoal.limit_amount)) >= 100 ? 'safe' : 'warn'}" style="width:${pct(cycleIncome, parseFloat(activeGoal.limit_amount))}%"></div></div>
         <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:4px">
-          <span>Received: ${fmtS(income)}</span>
-          <span>${pct(income,incomeGoal)}% of expected</span>
+          <span>Received: ${fmtS(cycleIncome)}</span>
+          <span>${pct(cycleIncome, parseFloat(activeGoal.limit_amount))}% of expected</span>
         </div>` : ''}
       </div>`;
 
@@ -912,35 +928,67 @@ async function deleteAccount(id) {
 
 // ─── Monthly Income Goal ──────────────────────────────────────────────────────
 
-function openSetIncome(month, existingId, currentAmount) {
+function openSetIncome(existingId, currentAmount, currentStart, currentEnd) {
+  // Smart defaults: cycle starts on the 25th
+  const today = new Date();
+  let defaultStart, defaultEnd;
+  if (currentStart && currentEnd) {
+    defaultStart = currentStart;
+    defaultEnd   = currentEnd;
+  } else {
+    const day = today.getDate();
+    if (day >= 25) {
+      defaultStart = new Date(today.getFullYear(), today.getMonth(), 25).toISOString().slice(0, 10);
+    } else {
+      defaultStart = new Date(today.getFullYear(), today.getMonth() - 1, 25).toISOString().slice(0, 10);
+    }
+    const [sy, sm] = defaultStart.split('-').map(Number);
+    defaultEnd = new Date(sy, sm, 24).toISOString().slice(0, 10);
+  }
+
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
       <div class="modal">
-        <div class="modal-title">Expected Income — ${monthLabel(month)}</div>
+        <div class="modal-title">Set Income Cycle</div>
         <div class="field">
-          <label>Total Expected Income This Month</label>
+          <label>Expected Income Amount</label>
           <input type="number" id="inc-amount" placeholder="0.00" step="0.01" min="0"
             inputmode="decimal" value="${currentAmount || ''}">
         </div>
+        <div class="field">
+          <label>Cycle Start Date</label>
+          <input type="date" id="inc-start" value="${defaultStart}">
+        </div>
+        <div class="field">
+          <label>Cycle End Date</label>
+          <input type="date" id="inc-end" value="${defaultEnd}">
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:-8px;margin-bottom:12px">
+          e.g. Jan 25 → Feb 24 for a 25th-of-month pay cycle
+        </div>
         <div class="modal-actions">
           <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-          <button class="btn btn-primary" onclick="submitSetIncome('${month}','${existingId}')">Save</button>
+          <button class="btn btn-primary" onclick="submitSetIncome('${existingId}')">Save</button>
         </div>
       </div>
     </div>`;
 }
 
-async function submitSetIncome(month, existingId) {
-  const amount = parseFloat(document.getElementById('inc-amount').value);
-  if (!amount) { showToast('Enter an amount', 'error'); return; }
+async function submitSetIncome(existingId) {
+  const amount    = parseFloat(document.getElementById('inc-amount').value);
+  const startDate = document.getElementById('inc-start').value;
+  const endDate   = document.getElementById('inc-end').value;
+  if (!amount || !startDate || !endDate) { showToast('Fill in all fields', 'error'); return; }
+  if (startDate >= endDate) { showToast('End date must be after start date', 'error'); return; }
+  const monthKey = `${startDate}_${endDate}`;
   try {
     if (existingId) {
-      await api('PATCH', 'budgets', `id=eq.${existingId}`, { limit_amount: amount });
+      await api('PATCH', 'budgets', `id=eq.${existingId}`, { limit_amount: amount, month: monthKey });
     } else {
-      await api('POST', 'budgets', '', { user_id: currentUserId, month, category: '__income_goal__', limit_amount: amount });
+      await api('POST', 'budgets', '', { user_id: currentUserId, month: monthKey, category: '__income_goal__', limit_amount: amount });
     }
     closeModal();
-    showToast('Income goal saved', 'success');
+    showToast('Income cycle saved', 'success');
     loadDashboard();
   } catch (e) { showToast(e.message, 'error'); }
 }

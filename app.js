@@ -9,8 +9,6 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 let authToken = null;
 let currentUserId = null;
 
-const EXPENSE_CATS = ['Housing','Food & Dining','Transportation','Utilities','Healthcare','Entertainment','Shopping','Personal Care','Education','Travel','Subscriptions','Other'];
-const INCOME_CATS = ['Salary','Freelance','Investment Returns','Business','Gift','Tax Refund','Other Income'];
 const ACCOUNT_TYPES = ['401k','Roth IRA','Traditional IRA','Brokerage','HSA','Crypto','Savings Bond','Other'];
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
@@ -213,14 +211,13 @@ async function loadDashboard() {
   try {
     const mr = monthRange(_dashMonth);
     const [txns, budgets, goals, snapshots, allIncomeGoals] = await Promise.all([
-      api('GET', 'transactions', `user_id=eq.${currentUserId}&${mr}&select=*&order=date.desc`),
+      api('GET', 'transactions', `user_id=eq.${currentUserId}&${mr}&type=eq.expense&select=*&order=date.desc`),
       api('GET', 'budgets',      `user_id=eq.${currentUserId}&month=eq.${_dashMonth}&category=neq.__income_goal__&select=*`),
       api('GET', 'savings_goals', `user_id=eq.${currentUserId}&select=*`),
       api('GET', 'investment_snapshots', `user_id=eq.${currentUserId}&select=*&order=date.desc`),
       api('GET', 'budgets', `user_id=eq.${currentUserId}&category=eq.__income_goal__&select=*&order=created_at.desc`),
     ]);
 
-    // Find the active income cycle (where today falls between start and end)
     const today = new Date().toISOString().slice(0, 10);
     const activeGoal = allIncomeGoals.find(g => {
       if (!g.month.includes('_')) return false;
@@ -228,17 +225,14 @@ async function loadDashboard() {
       return today >= s && today <= e;
     }) || allIncomeGoals[0] || null;
 
-    let cycleStart = null, cycleEnd = null, cycleIncome = 0;
+    let cycleStart = null, cycleEnd = null;
     if (activeGoal && activeGoal.month.includes('_')) {
       [cycleStart, cycleEnd] = activeGoal.month.split('_');
-      const cycleTxns = await api('GET', 'transactions',
-        `user_id=eq.${currentUserId}&date=gte.${cycleStart}&date=lte.${cycleEnd}&type=eq.income&select=amount`);
-      cycleIncome = cycleTxns.reduce((s, t) => s + parseFloat(t.amount), 0);
     }
 
-    const income   = txns.filter(t => t.type === 'income').reduce((s, t) => s + parseFloat(t.amount), 0);
-    const expenses = txns.filter(t => t.type === 'expense').reduce((s, t) => s + parseFloat(t.amount), 0);
-    const net      = income - expenses;
+    const expenses       = txns.reduce((s, t) => s + parseFloat(t.amount), 0);
+    const incomeGoalAmt  = activeGoal ? parseFloat(activeGoal.limit_amount) : null;
+    const remaining      = incomeGoalAmt != null ? incomeGoalAmt - expenses : null;
 
     // Net worth
     const latestByAcct = {};
@@ -249,13 +243,20 @@ async function loadDashboard() {
 
     // Spending by category
     const byCat = {};
-    txns.filter(t => t.type === 'expense').forEach(t => {
-      byCat[t.category] = (byCat[t.category] || 0) + parseFloat(t.amount);
-    });
-    const topCats = Object.entries(byCat).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    txns.forEach(t => { byCat[t.category] = (byCat[t.category] || 0) + parseFloat(t.amount); });
 
-    // Budget alerts
-    const alerts = budgets.filter(b => (byCat[b.category] || 0) >= parseFloat(b.limit_amount) * 0.85);
+    // Budget map
+    const budgetMap = {};
+    budgets.forEach(b => { budgetMap[b.category] = parseFloat(b.limit_amount); });
+
+    // Budget alerts (items with a limit set that are 85%+ used)
+    const alerts = budgets.filter(b => {
+      const limit = parseFloat(b.limit_amount);
+      return limit > 0 && (byCat[b.category] || 0) >= limit * 0.85;
+    });
+
+    // Top spending categories
+    const topCats = Object.entries(byCat).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
     let html = `
       <div class="nw-banner">
@@ -267,10 +268,9 @@ async function loadDashboard() {
         <span class="month-label">${monthLabel(_dashMonth)}</span>
         <button class="month-nav" onclick="_dashMonth=nextMonth(_dashMonth);loadDashboard()">&#8250;</button>
       </div>
-      <div class="stat-row">
-        <div class="stat-card"><div class="stat-label">Income</div><div class="stat-value green">${fmtS(income)}</div></div>
-        <div class="stat-card"><div class="stat-label">Expenses</div><div class="stat-value red">${fmtS(expenses)}</div></div>
-        <div class="stat-card"><div class="stat-label">Net</div><div class="stat-value ${net >= 0 ? 'green' : 'red'}">${net >= 0 ? '' : '-'}${fmtS(Math.abs(net))}</div></div>
+      <div class="stat-row two">
+        <div class="stat-card"><div class="stat-label">Spent</div><div class="stat-value red">${fmtS(expenses)}</div></div>
+        <div class="stat-card"><div class="stat-label">Remaining</div><div class="stat-value ${remaining != null && remaining >= 0 ? 'green' : 'red'}">${remaining != null ? fmtS(remaining) : '—'}</div></div>
       </div>
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${activeGoal ? '10px' : '0'}">
@@ -283,11 +283,11 @@ async function loadDashboard() {
           </div>
           <button class="btn btn-sm btn-secondary" onclick="openSetIncome('${activeGoal ? activeGoal.id : ''}',${activeGoal ? activeGoal.limit_amount : 0},'${cycleStart || ''}','${cycleEnd || ''}')">${activeGoal ? 'Edit' : 'Set Income'}</button>
         </div>
-        ${activeGoal && cycleStart ? `
-        <div class="progress-bar"><div class="progress-fill ${pct(cycleIncome, parseFloat(activeGoal.limit_amount)) >= 100 ? 'safe' : 'warn'}" style="width:${pct(cycleIncome, parseFloat(activeGoal.limit_amount))}%"></div></div>
+        ${activeGoal && incomeGoalAmt ? `
+        <div class="progress-bar"><div class="progress-fill ${pct(expenses, incomeGoalAmt) >= 100 ? 'over' : pct(expenses, incomeGoalAmt) >= 80 ? 'warn' : 'safe'}" style="width:${pct(expenses, incomeGoalAmt)}%"></div></div>
         <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:4px">
-          <span>Received: ${fmtS(cycleIncome)}</span>
-          <span>${pct(cycleIncome, parseFloat(activeGoal.limit_amount))}% of expected</span>
+          <span>Spent: ${fmtS(expenses)}</span>
+          <span>${pct(expenses, incomeGoalAmt)}% of income</span>
         </div>` : ''}
       </div>`;
 
@@ -308,9 +308,8 @@ async function loadDashboard() {
     if (topCats.length) {
       html += `<div class="card"><div class="card-title">Top Spending</div>`;
       topCats.forEach(([cat, amt]) => {
-        const budget = budgets.find(b => b.category === cat);
-        const limit  = budget ? parseFloat(budget.limit_amount) : null;
-        const p      = limit ? pct(amt, limit) : null;
+        const limit = budgetMap[cat] || null;
+        const p     = limit ? pct(amt, limit) : null;
         html += `<div style="margin-bottom:12px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
             <span style="font-size:13px;color:var(--text)">${cat}</span>
@@ -341,7 +340,7 @@ async function loadDashboard() {
     if (!txns.length && !goals.length) {
       html += `<div class="empty-state">
         <div class="empty-state-icon">💰</div>
-        <div class="empty-state-text">No data yet.<br>Add your first transaction to get started.</div>
+        <div class="empty-state-text">No data yet.<br>Add your first expense to get started.</div>
       </div>`;
     }
 
@@ -354,23 +353,19 @@ async function loadDashboard() {
 
 // ─── Transactions ─────────────────────────────────────────────────────────────
 
-let _txnMonth  = currMonth();
-let _txnFilter = 'all';
+let _txnMonth = currMonth();
 
 async function loadTransactions() {
   showFab();
   const el = document.getElementById('txn-content');
   el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {
-    const [allTxns, monthBudgets, allIncomeGoals] = await Promise.all([
-      api('GET', 'transactions', `user_id=eq.${currentUserId}&${monthRange(_txnMonth)}&select=*&order=date.desc,created_at.desc`),
-      api('GET', 'budgets',      `user_id=eq.${currentUserId}&month=eq.${_txnMonth}&category=neq.__income_goal__&select=limit_amount`),
+    const [txns, allIncomeGoals] = await Promise.all([
+      api('GET', 'transactions', `user_id=eq.${currentUserId}&${monthRange(_txnMonth)}&type=eq.expense&select=*&order=date.desc,created_at.desc`),
       api('GET', 'budgets',      `user_id=eq.${currentUserId}&category=eq.__income_goal__&select=*&order=created_at.desc`),
     ]);
 
-    const income   = allTxns.filter(t => t.type === 'income').reduce((s, t) => s + parseFloat(t.amount), 0);
-    const expenses = allTxns.filter(t => t.type === 'expense').reduce((s, t) => s + parseFloat(t.amount), 0);
-    const txns     = _txnFilter === 'all' ? allTxns : allTxns.filter(t => t.type === _txnFilter);
+    const totalSpent = txns.reduce((s, t) => s + parseFloat(t.amount), 0);
 
     const today = new Date().toISOString().slice(0, 10);
     const activeGoal = allIncomeGoals.find(g => {
@@ -379,8 +374,7 @@ async function loadTransactions() {
       return today >= s && today <= e;
     }) || allIncomeGoals[0] || null;
     const incomeGoalAmt = activeGoal ? parseFloat(activeGoal.limit_amount) : null;
-    const totalBudgeted = monthBudgets.reduce((s, b) => s + parseFloat(b.limit_amount), 0);
-    const txnDelta      = incomeGoalAmt != null ? incomeGoalAmt - totalBudgeted : null;
+    const remaining     = incomeGoalAmt != null ? incomeGoalAmt - totalSpent : null;
 
     let html = `
       <div class="month-bar">
@@ -388,30 +382,16 @@ async function loadTransactions() {
         <span class="month-label">${monthLabel(_txnMonth)}</span>
         <button class="month-nav" onclick="_txnMonth=nextMonth(_txnMonth);loadTransactions()">&#8250;</button>
       </div>
-      <div class="stat-row two" style="margin-bottom:10px">
-        <div class="stat-card"><div class="stat-label">Income</div><div class="stat-value green">${fmtS(income)}</div></div>
-        <div class="stat-card"><div class="stat-label">Expenses</div><div class="stat-value red">${fmtS(expenses)}</div></div>
-      </div>
-      ${txnDelta !== null ? `<div class="card" style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;padding:12px 16px">
-        <div>
-          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">Unallocated Budget</div>
-          <div style="font-size:11px;color:var(--muted)">Income ${fmtS(incomeGoalAmt)} − Budgeted ${fmtS(totalBudgeted)}</div>
-        </div>
-        <div style="font-size:22px;font-weight:800;color:${txnDelta >= 0 ? 'var(--green)' : 'var(--red)'}">${txnDelta >= 0 ? '' : '-'}${fmtS(Math.abs(txnDelta))}</div>
-      </div>` : ''}
-      <div style="display:flex;gap:8px;margin-bottom:14px">
-        <button class="btn btn-sm ${_txnFilter === 'all' ? 'btn-primary' : 'btn-secondary'}" onclick="_txnFilter='all';loadTransactions()">All</button>
-        <button class="btn btn-sm ${_txnFilter === 'income' ? 'btn-primary' : 'btn-secondary'}" onclick="_txnFilter='income';loadTransactions()">Income</button>
-        <button class="btn btn-sm ${_txnFilter === 'expense' ? 'btn-primary' : 'btn-secondary'}" onclick="_txnFilter='expense';loadTransactions()">Expenses</button>
+      <div class="stat-row two" style="margin-bottom:12px">
+        <div class="stat-card"><div class="stat-label">Spent</div><div class="stat-value red">${fmtS(totalSpent)}</div></div>
+        <div class="stat-card"><div class="stat-label">Remaining</div><div class="stat-value ${remaining != null && remaining >= 0 ? 'green' : 'red'}">${remaining != null ? fmtS(remaining) : '—'}</div></div>
       </div>`;
 
     if (txns.length) {
-      // Group by date
       const byDate = {};
       txns.forEach(t => { (byDate[t.date] = byDate[t.date] || []).push(t); });
       Object.entries(byDate).forEach(([date, items]) => {
-        const d = new Date(date + 'T12:00:00');
-        const label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        const label = new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
         html += `<div style="font-size:11px;color:var(--muted);margin:8px 0 4px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">${label}</div>
           <div class="card" style="padding:0 14px">`;
         items.forEach(t => {
@@ -421,7 +401,7 @@ async function loadTransactions() {
               <div class="list-item-sub"><span class="cat-tag">${t.category}</span></div>
             </div>
             <div class="list-item-right" style="display:flex;align-items:center;gap:8px">
-              <span class="${t.type === 'income' ? 'amount-income' : 'amount-expense'}">${t.type === 'income' ? '+' : '-'}${fmt(t.amount)}</span>
+              <span class="amount-expense">-${fmt(t.amount)}</span>
               <button class="btn btn-sm btn-danger" onclick="deleteTxn('${t.id}')">✕</button>
             </div>
           </div>`;
@@ -429,7 +409,7 @@ async function loadTransactions() {
         html += `</div>`;
       });
     } else {
-      html += `<div class="empty-state"><div class="empty-state-icon">💸</div><div class="empty-state-text">No transactions this month.<br>Tap + to add one.</div></div>`;
+      html += `<div class="empty-state"><div class="empty-state-icon">💸</div><div class="empty-state-text">No expenses this month.<br>Tap + to add one.</div></div>`;
     }
 
     el.innerHTML = html;
@@ -439,20 +419,15 @@ async function loadTransactions() {
   }
 }
 
-let _txnModalType = 'expense';
-
 function openAddTxn() {
   const today = new Date().toISOString().slice(0, 10);
+  const cats  = [...BUDGET_ITEMS, 'Other'];
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
       <div class="modal">
-        <div class="modal-title">Add Transaction</div>
-        <div class="type-toggle">
-          <button id="tt-exp" class="active-expense" onclick="setTxnModalType('expense')">Expense</button>
-          <button id="tt-inc" onclick="setTxnModalType('income')">Income</button>
-        </div>
+        <div class="modal-title">Add Expense</div>
         <div class="field"><label>Amount</label><input type="number" id="t-amount" placeholder="0.00" step="0.01" min="0" inputmode="decimal"></div>
-        <div class="field"><label>Category</label><select id="t-cat">${EXPENSE_CATS.map(c => `<option>${c}</option>`).join('')}</select></div>
+        <div class="field"><label>Category</label><select id="t-cat">${cats.map(c => `<option>${c}</option>`).join('')}</select></div>
         <div class="field"><label>Date</label><input type="date" id="t-date" value="${today}"></div>
         <div class="field"><label>Description (optional)</label><input type="text" id="t-desc" placeholder="e.g. Grocery run, Netflix"></div>
         <div class="modal-actions">
@@ -461,27 +436,18 @@ function openAddTxn() {
         </div>
       </div>
     </div>`;
-  _txnModalType = 'expense';
-}
-
-function setTxnModalType(type) {
-  _txnModalType = type;
-  document.getElementById('tt-exp').className = type === 'expense' ? 'active-expense' : '';
-  document.getElementById('tt-inc').className = type === 'income'  ? 'active-income'  : '';
-  const cats = type === 'expense' ? EXPENSE_CATS : INCOME_CATS;
-  document.getElementById('t-cat').innerHTML = cats.map(c => `<option>${c}</option>`).join('');
 }
 
 async function submitTxn() {
-  const amount   = parseFloat(document.getElementById('t-amount').value);
-  const category = document.getElementById('t-cat').value;
-  const date     = document.getElementById('t-date').value;
+  const amount      = parseFloat(document.getElementById('t-amount').value);
+  const category    = document.getElementById('t-cat').value;
+  const date        = document.getElementById('t-date').value;
   const description = document.getElementById('t-desc').value.trim();
   if (!amount || !date) { showToast('Enter amount and date', 'error'); return; }
   try {
-    await api('POST', 'transactions', '', { user_id: currentUserId, type: _txnModalType, amount, category, date, description });
+    await api('POST', 'transactions', '', { user_id: currentUserId, type: 'expense', amount, category, date, description });
     closeModal();
-    showToast('Transaction added', 'success');
+    showToast('Expense added', 'success');
     loadTransactions();
   } catch (e) { showToast(e.message, 'error'); }
 }
@@ -506,9 +472,10 @@ async function loadBudget() {
   const el = document.getElementById('budget-content');
   el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {
-    const [budgets, allIncomeGoals] = await Promise.all([
-      api('GET', 'budgets', `user_id=eq.${currentUserId}&month=eq.${_budgetMonth}&category=neq.__income_goal__&select=*`),
-      api('GET', 'budgets', `user_id=eq.${currentUserId}&category=eq.__income_goal__&select=*&order=created_at.desc`),
+    const [budgets, allIncomeGoals, transactions] = await Promise.all([
+      api('GET', 'budgets',      `user_id=eq.${currentUserId}&month=eq.${_budgetMonth}&category=neq.__income_goal__&select=*`),
+      api('GET', 'budgets',      `user_id=eq.${currentUserId}&category=eq.__income_goal__&select=*&order=created_at.desc`),
+      api('GET', 'transactions', `user_id=eq.${currentUserId}&${monthRange(_budgetMonth)}&type=eq.expense&select=amount,category`),
     ]);
 
     // Ensure all 9 items exist for this month — create any missing ones at $0
@@ -521,7 +488,12 @@ async function loadBudget() {
       return loadBudget();
     }
 
-    // Sort by BUDGET_ITEMS order
+    // Spending per category from actual transactions
+    const spentMap = {};
+    transactions.forEach(t => {
+      spentMap[t.category] = (spentMap[t.category] || 0) + parseFloat(t.amount);
+    });
+
     const budgetMap = {};
     budgets.forEach(b => { budgetMap[b.category] = b; });
     const ordered = BUDGET_ITEMS.map(cat => budgetMap[cat]).filter(Boolean);
@@ -533,8 +505,8 @@ async function loadBudget() {
       const [s, e] = g.month.split('_');
       return today >= s && today <= e;
     }) || allIncomeGoals[0] || null;
-    const incomeGoalAmt  = activeGoal ? parseFloat(activeGoal.limit_amount) : null;
-    const totalBudgeted  = ordered.reduce((s, b) => s + parseFloat(b.limit_amount), 0);
+    const incomeGoalAmt = activeGoal ? parseFloat(activeGoal.limit_amount) : null;
+    const totalBudgeted = ordered.reduce((s, b) => s + parseFloat(b.limit_amount), 0);
     const normalSpending = incomeGoalAmt != null ? incomeGoalAmt - totalBudgeted : null;
 
     let html = `
@@ -542,26 +514,40 @@ async function loadBudget() {
         <button class="month-nav" onclick="_budgetMonth=prevMonth(_budgetMonth);loadBudget()">&#8249;</button>
         <span class="month-label">${monthLabel(_budgetMonth)}</span>
         <button class="month-nav" onclick="_budgetMonth=nextMonth(_budgetMonth);loadBudget()">&#8250;</button>
-      </div>
-      <div class="card" style="padding:0 16px">`;
+      </div>`;
 
     ordered.forEach(b => {
-      const amt = parseFloat(b.limit_amount);
+      const budget = parseFloat(b.limit_amount);
+      const spent  = spentMap[b.category] || 0;
+      const p      = budget > 0 ? pct(spent, budget) : 0;
       html += `
-        <div class="list-item">
-          <div class="list-item-left"><div class="list-item-title">${b.category}</div></div>
-          <div style="display:flex;align-items:center;gap:10px">
-            <span style="font-size:16px;font-weight:700;color:${amt === 0 ? 'var(--muted)' : 'var(--text)'}">${fmtS(amt)}</span>
-            <button class="btn btn-sm btn-secondary" onclick="openEditBudget('${b.id}','${b.category}',${amt})">Edit</button>
+        <div class="card" style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div style="font-size:15px;font-weight:700">${b.category}</div>
+            <button class="btn btn-sm btn-secondary" onclick="openEditBudget('${b.id}','${b.category}',${budget})">Edit</button>
           </div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:${budget > 0 ? '6px' : '0'}">
+            <span style="color:${spent > 0 ? 'var(--red)' : 'var(--muted)'}">Spent: ${fmtS(spent)}</span>
+            <span style="color:var(--muted)">${budget > 0 ? 'Budget: ' + fmtS(budget) : 'No budget set'}</span>
+          </div>
+          ${budget > 0 ? `
+          <div class="progress-bar"><div class="progress-fill ${p >= 100 ? 'over' : p >= 80 ? 'warn' : 'safe'}" style="width:${p}%"></div></div>
+          <div style="text-align:right;font-size:11px;color:var(--muted);margin-top:3px">${p}%</div>
+          ` : ''}
         </div>`;
     });
 
-    // Total row
+    // Totals row
+    const totalSpent = BUDGET_ITEMS.reduce((s, cat) => s + (spentMap[cat] || 0), 0);
     html += `
-        <div class="list-item" style="border-top:2px solid var(--border);margin-top:4px">
-          <div class="list-item-left"><div style="font-weight:700;font-size:15px">Total</div></div>
+      <div class="card" style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-weight:700;font-size:15px">Total Budgeted</span>
           <span style="font-size:18px;font-weight:800">${fmtS(totalBudgeted)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+          <span style="font-size:12px;color:var(--muted)">Total Spent</span>
+          <span style="font-size:14px;font-weight:700;color:var(--red)">${fmtS(totalSpent)}</span>
         </div>
       </div>`;
 

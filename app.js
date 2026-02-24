@@ -680,6 +680,15 @@ async function submitBudget() {
   if (sel === 'Other' && !custom) { showToast('Enter a category name', 'error'); return; }
   try {
     await api('POST', 'budgets', '', { user_id: currentUserId, month: _budgetMonth, category: cat, limit_amount: limit });
+
+    // Add to every other month that already has budget items
+    const existing = await api('GET', 'budgets', `user_id=eq.${currentUserId}&category=neq.__income_goal__&select=month`);
+    const otherMonths = [...new Set(existing.map(b => b.month))].filter(m => m !== _budgetMonth);
+    await Promise.all(otherMonths.map(month =>
+      api('POST', 'budgets', '', { user_id: currentUserId, month, category: cat, limit_amount: limit })
+        .catch(() => {}) // skip if already exists in that month
+    ));
+
     closeModal(); showToast('Budget set', 'success'); loadBudget();
   } catch (e) { showToast(e.message, 'error'); }
 }

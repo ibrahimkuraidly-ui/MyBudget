@@ -676,7 +676,7 @@ async function submitBudget() {
   const custom = (document.getElementById('b-cat-custom') || {}).value?.trim();
   const cat    = sel === 'Other' ? (custom || 'Other') : sel;
   const limit  = parseFloat(document.getElementById('b-limit').value);
-  if (!limit) { showToast('Enter a limit', 'error'); return; }
+  if (limit == null || isNaN(limit)) { showToast('Enter a limit', 'error'); return; }
   if (sel === 'Other' && !custom) { showToast('Enter a category name', 'error'); return; }
   try {
     await api('POST', 'budgets', '', { user_id: currentUserId, month: _budgetMonth, category: cat, limit_amount: limit });
@@ -686,7 +686,7 @@ async function submitBudget() {
 
 async function submitEditBudget(id) {
   const limit = parseFloat(document.getElementById('b-limit').value);
-  if (!limit) { showToast('Enter a limit', 'error'); return; }
+  if (limit == null || isNaN(limit)) { showToast('Enter a limit', 'error'); return; }
   try {
     await api('PATCH', 'budgets', `id=eq.${id}`, { limit_amount: limit });
     closeModal(); showToast('Budget updated', 'success'); loadBudget();

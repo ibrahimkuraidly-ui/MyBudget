@@ -497,6 +497,8 @@ async function deleteTxn(id) {
 
 // ─── Budget ──────────────────────────────────────────────────────────────────
 
+const BUDGET_ITEMS = ['Rent','Groceries','Phone Bill','Electric Bill','Sara Allowance','Savings','Baba Allowance','Auto Insurance','Subscriptions'];
+
 let _budgetMonth = currMonth();
 
 async function loadBudget() {
@@ -504,117 +506,83 @@ async function loadBudget() {
   const el = document.getElementById('budget-content');
   el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {
-    const [budgets, txns, allIncomeGoals] = await Promise.all([
-      api('GET', 'budgets',      `user_id=eq.${currentUserId}&month=eq.${_budgetMonth}&select=*&order=category`),
-      api('GET', 'transactions', `user_id=eq.${currentUserId}&${monthRange(_budgetMonth)}&type=eq.expense&select=category,amount`),
-      api('GET', 'budgets',      `user_id=eq.${currentUserId}&category=eq.__income_goal__&select=*&order=created_at.desc`),
+    const [budgets, allIncomeGoals] = await Promise.all([
+      api('GET', 'budgets', `user_id=eq.${currentUserId}&month=eq.${_budgetMonth}&category=neq.__income_goal__&select=*`),
+      api('GET', 'budgets', `user_id=eq.${currentUserId}&category=eq.__income_goal__&select=*&order=created_at.desc`),
     ]);
 
-    let expenseBudgets = budgets.filter(b => b.category !== '__income_goal__');
-
-    // Sync: fetch most recent month's categories and add any that are missing here
-    const allPrev = await api('GET', 'budgets',
-      `user_id=eq.${currentUserId}&category=neq.__income_goal__&select=*&order=month.desc`);
-    const otherMonths = [...new Set(allPrev.map(b => b.month))].filter(m => m !== _budgetMonth);
-    if (otherMonths.length > 0) {
-      const latestCats  = allPrev.filter(b => b.month === otherMonths[0]);
-      const currentCats = new Set(expenseBudgets.map(b => b.category));
-      const missing     = latestCats.filter(b => !currentCats.has(b.category));
-      if (missing.length > 0) {
-        await Promise.all(missing.map(b =>
-          api('POST', 'budgets', '', { user_id: currentUserId, month: _budgetMonth, category: b.category, limit_amount: b.limit_amount })
-        ));
-        return loadBudget();
-      }
+    // Ensure all 9 items exist for this month — create any missing ones at $0
+    const existingCats = new Set(budgets.map(b => b.category));
+    const missing = BUDGET_ITEMS.filter(cat => !existingCats.has(cat));
+    if (missing.length > 0) {
+      await Promise.all(missing.map(cat =>
+        api('POST', 'budgets', '', { user_id: currentUserId, month: _budgetMonth, category: cat, limit_amount: 0 })
+      ));
+      return loadBudget();
     }
 
-    // Find active income goal
+    // Sort by BUDGET_ITEMS order
+    const budgetMap = {};
+    budgets.forEach(b => { budgetMap[b.category] = b; });
+    const ordered = BUDGET_ITEMS.map(cat => budgetMap[cat]).filter(Boolean);
+
+    // Active income goal
     const today = new Date().toISOString().slice(0, 10);
     const activeGoal = allIncomeGoals.find(g => {
       if (!g.month.includes('_')) return false;
       const [s, e] = g.month.split('_');
       return today >= s && today <= e;
     }) || allIncomeGoals[0] || null;
-    const incomeGoalAmt = activeGoal ? parseFloat(activeGoal.limit_amount) : null;
-
-    const spentByCat  = {};
-    txns.forEach(t => { spentByCat[t.category] = (spentByCat[t.category] || 0) + parseFloat(t.amount); });
-    const totalBudget = expenseBudgets.reduce((s, b) => s + parseFloat(b.limit_amount), 0);
-    const totalSpent  = expenseBudgets.reduce((s, b) => s + (spentByCat[b.category] || 0), 0);
-    const delta       = incomeGoalAmt != null ? incomeGoalAmt - totalBudget : null;
+    const incomeGoalAmt  = activeGoal ? parseFloat(activeGoal.limit_amount) : null;
+    const totalBudgeted  = ordered.reduce((s, b) => s + parseFloat(b.limit_amount), 0);
+    const normalSpending = incomeGoalAmt != null ? incomeGoalAmt - totalBudgeted : null;
 
     let html = `
       <div class="month-bar">
         <button class="month-nav" onclick="_budgetMonth=prevMonth(_budgetMonth);loadBudget()">&#8249;</button>
         <span class="month-label">${monthLabel(_budgetMonth)}</span>
         <button class="month-nav" onclick="_budgetMonth=nextMonth(_budgetMonth);loadBudget()">&#8250;</button>
-      </div>`;
+      </div>
+      <div class="card" style="padding:0 16px">`;
 
-    if (totalBudget > 0) {
-      const p = pct(totalSpent, totalBudget);
-      html += `<div class="card">
-        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-          <span style="font-size:13px;color:var(--muted)">Total Budget</span>
-          <span style="font-size:13px;font-weight:700">${fmtS(totalSpent)} / ${fmtS(totalBudget)}</span>
-        </div>
-        <div class="progress-bar" style="height:12px">
-          <div class="progress-fill ${p >= 100 ? 'over' : p >= 80 ? 'warn' : 'safe'}" style="width:${p}%"></div>
-        </div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px">${p}% used · ${fmtS(Math.max(0, totalBudget - totalSpent))} remaining</div>
-      </div>`;
-    }
-
-    if (delta !== null) {
-      html += `<div class="card" style="border-color:${delta >= 0 ? 'var(--green)' : 'var(--red)'}40">
-        <div class="card-title">Income vs Budget</div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
-          <span style="color:var(--muted)">Expected Income</span>
-          <span style="color:var(--green);font-weight:600">${fmtS(incomeGoalAmt)}</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:10px">
-          <span style="color:var(--muted)">Total Budgeted</span>
-          <span style="font-weight:600">${fmtS(totalBudget)}</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid var(--border)">
-          <span style="font-size:14px;font-weight:700">${delta >= 0 ? 'Unallocated' : 'Over-Allocated'}</span>
-          <span style="font-size:20px;font-weight:800;color:${delta >= 0 ? 'var(--green)' : 'var(--red)'}">${delta >= 0 ? '' : '-'}${fmtS(Math.abs(delta))}</span>
-        </div>
-      </div>`;
-    }
-
-    html += `<div class="page-header">
-      <span class="section-title">Categories</span>
-      <button class="btn btn-primary btn-sm" onclick="openSetBudget()">+ Set Budget</button>
-    </div>`;
-
-    if (expenseBudgets.length) {
-      expenseBudgets.forEach(b => {
-        const spent = spentByCat[b.category] || 0;
-        const limit = parseFloat(b.limit_amount);
-        const p     = pct(spent, limit);
-        const cls   = p >= 100 ? 'over' : p >= 80 ? 'warn' : 'safe';
-        const remaining = limit - spent;
-        html += `<div class="card">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <span style="font-size:15px;font-weight:700">${b.category}</span>
-            <div style="display:flex;gap:6px;align-items:center">
-              <span class="badge ${p >= 100 ? 'badge-red' : p >= 80 ? 'badge-yellow' : 'badge-green'}">${p}%</span>
-              <button class="btn btn-sm btn-secondary" onclick="openEditBudget('${b.id}','${b.category}',${limit})">Edit</button>
-              <button class="btn btn-sm btn-danger" onclick="deleteBudget('${b.id}')">✕</button>
-            </div>
-          </div>
-          <div class="progress-bar"><div class="progress-fill ${cls}" style="width:${p}%"></div></div>
-          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:4px">
-            <span>Spent: ${fmtS(spent)}</span>
-            <span>Limit: ${fmtS(limit)}</span>
-            <span style="color:${remaining >= 0 ? 'var(--green)' : 'var(--red)'}">
-              ${remaining >= 0 ? 'Left: ' + fmtS(remaining) : 'Over: ' + fmtS(Math.abs(remaining))}
-            </span>
+    ordered.forEach(b => {
+      const amt = parseFloat(b.limit_amount);
+      html += `
+        <div class="list-item">
+          <div class="list-item-left"><div class="list-item-title">${b.category}</div></div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:16px;font-weight:700;color:${amt === 0 ? 'var(--muted)' : 'var(--text)'}">${fmtS(amt)}</span>
+            <button class="btn btn-sm btn-secondary" onclick="openEditBudget('${b.id}','${b.category}',${amt})">Edit</button>
           </div>
         </div>`;
-      });
+    });
+
+    // Total row
+    html += `
+        <div class="list-item" style="border-top:2px solid var(--border);margin-top:4px">
+          <div class="list-item-left"><div style="font-weight:700;font-size:15px">Total</div></div>
+          <span style="font-size:18px;font-weight:800">${fmtS(totalBudgeted)}</span>
+        </div>
+      </div>`;
+
+    // Normal Spending delta card
+    if (normalSpending !== null) {
+      html += `
+      <div class="card" style="border-color:${normalSpending >= 0 ? 'var(--green)' : 'var(--red)'}60">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:15px;font-weight:700">Normal Spending</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px">
+              Income ${fmtS(incomeGoalAmt)} − Budgeted ${fmtS(totalBudgeted)}
+            </div>
+          </div>
+          <span style="font-size:26px;font-weight:800;color:${normalSpending >= 0 ? 'var(--green)' : 'var(--red)'}">
+            ${normalSpending >= 0 ? '' : '-'}${fmtS(Math.abs(normalSpending))}
+          </span>
+        </div>
+      </div>`;
     } else {
-      html += `<div class="empty-state"><div class="empty-state-icon">📊</div><div class="empty-state-text">No budgets set for this month.<br>Tap "Set Budget" to add one.</div></div>`;
+      html += `<div style="font-size:12px;color:var(--muted);text-align:center;padding:8px 0">Set your income goal on the Dashboard to see Normal Spending</div>`;
     }
 
     el.innerHTML = html;
@@ -624,46 +592,15 @@ async function loadBudget() {
   }
 }
 
-function openSetBudget() {
-  document.getElementById('modal-root').innerHTML = `
-    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
-      <div class="modal">
-        <div class="modal-title">Set Budget</div>
-        <div class="field"><label>Category</label>
-          <select id="b-cat" onchange="toggleCustomCat(this)">${EXPENSE_CATS.map(c => `<option>${c}</option>`).join('')}</select>
-        </div>
-        <div class="field hidden" id="custom-cat-field">
-          <label>Custom Category Name</label>
-          <input type="text" id="b-cat-custom" placeholder="e.g. Car Payment, Dog Food">
-        </div>
-        <div class="field"><label>Monthly Limit</label><input type="number" id="b-limit" placeholder="0.00" step="0.01" min="0" inputmode="decimal"></div>
-        <div class="modal-actions">
-          <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-          <button class="btn btn-primary" onclick="submitBudget()">Save</button>
-        </div>
-      </div>
-    </div>`;
-}
-
-function toggleCustomCat(sel) {
-  const field = document.getElementById('custom-cat-field');
-  if (sel.value === 'Other') {
-    field.classList.remove('hidden');
-    document.getElementById('b-cat-custom').focus();
-  } else {
-    field.classList.add('hidden');
-  }
-}
-
 function openEditBudget(id, cat, amount) {
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
       <div class="modal">
-        <div class="modal-title">Edit Budget</div>
-        <div class="field"><label>Category</label>
-          <input type="text" value="${cat}" disabled style="opacity:0.6">
+        <div class="modal-title">${cat}</div>
+        <div class="field">
+          <label>Amount for ${monthLabel(_budgetMonth)}</label>
+          <input type="number" id="b-limit" step="0.01" min="0" value="${amount === 0 ? '' : amount}" placeholder="0.00" inputmode="decimal">
         </div>
-        <div class="field"><label>Monthly Limit</label><input type="number" id="b-limit" step="0.01" min="0" value="${amount}" inputmode="decimal"></div>
         <div class="modal-actions">
           <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
           <button class="btn btn-primary" onclick="submitEditBudget('${id}')">Save</button>
@@ -672,42 +609,13 @@ function openEditBudget(id, cat, amount) {
     </div>`;
 }
 
-async function submitBudget() {
-  const sel    = document.getElementById('b-cat').value;
-  const custom = (document.getElementById('b-cat-custom') || {}).value?.trim();
-  const cat    = sel === 'Other' ? (custom || 'Other') : sel;
-  const limit  = parseFloat(document.getElementById('b-limit').value);
-  if (limit == null || isNaN(limit)) { showToast('Enter a limit', 'error'); return; }
-  if (sel === 'Other' && !custom) { showToast('Enter a category name', 'error'); return; }
-  try {
-    await api('POST', 'budgets', '', { user_id: currentUserId, month: _budgetMonth, category: cat, limit_amount: limit });
-
-    // Add to every other month that already has budget items
-    const existing = await api('GET', 'budgets', `user_id=eq.${currentUserId}&category=neq.__income_goal__&select=month`);
-    const otherMonths = [...new Set(existing.map(b => b.month))].filter(m => m !== _budgetMonth);
-    await Promise.all(otherMonths.map(month =>
-      api('POST', 'budgets', '', { user_id: currentUserId, month, category: cat, limit_amount: limit })
-        .catch(() => {}) // skip if already exists in that month
-    ));
-
-    closeModal(); showToast('Budget set', 'success'); loadBudget();
-  } catch (e) { showToast(e.message, 'error'); }
-}
-
 async function submitEditBudget(id) {
-  const limit = parseFloat(document.getElementById('b-limit').value);
-  if (limit == null || isNaN(limit)) { showToast('Enter a limit', 'error'); return; }
+  const val   = document.getElementById('b-limit').value;
+  const limit = val === '' ? 0 : parseFloat(val);
+  if (isNaN(limit)) { showToast('Enter a valid amount', 'error'); return; }
   try {
     await api('PATCH', 'budgets', `id=eq.${id}`, { limit_amount: limit });
-    closeModal(); showToast('Budget updated', 'success'); loadBudget();
-  } catch (e) { showToast(e.message, 'error'); }
-}
-
-async function deleteBudget(id) {
-  if (!confirm('Delete this budget?')) return;
-  try {
-    await api('DELETE', 'budgets', `id=eq.${id}`);
-    showToast('Deleted', 'success'); loadBudget();
+    closeModal(); showToast('Saved', 'success'); loadBudget();
   } catch (e) { showToast(e.message, 'error'); }
 }
 

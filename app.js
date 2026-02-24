@@ -512,17 +512,18 @@ async function loadBudget() {
 
     let expenseBudgets = budgets.filter(b => b.category !== '__income_goal__');
 
-    // Auto-copy budgets from most recent month if none exist for this month
-    if (expenseBudgets.length === 0) {
-      const prev = await api('GET', 'budgets',
-        `user_id=eq.${currentUserId}&category=neq.__income_goal__&select=*&order=month.desc`);
-      const prevMonths = [...new Set(prev.map(b => b.month))].filter(m => m !== _budgetMonth);
-      if (prevMonths.length > 0) {
-        const toCopy = prev.filter(b => b.month === prevMonths[0]);
-        await Promise.all(toCopy.map(b =>
+    // Sync: fetch most recent month's categories and add any that are missing here
+    const allPrev = await api('GET', 'budgets',
+      `user_id=eq.${currentUserId}&category=neq.__income_goal__&select=*&order=month.desc`);
+    const otherMonths = [...new Set(allPrev.map(b => b.month))].filter(m => m !== _budgetMonth);
+    if (otherMonths.length > 0) {
+      const latestCats  = allPrev.filter(b => b.month === otherMonths[0]);
+      const currentCats = new Set(expenseBudgets.map(b => b.category));
+      const missing     = latestCats.filter(b => !currentCats.has(b.category));
+      if (missing.length > 0) {
+        await Promise.all(missing.map(b =>
           api('POST', 'budgets', '', { user_id: currentUserId, month: _budgetMonth, category: b.category, limit_amount: b.limit_amount })
         ));
-        showToast('Budget copied from ' + monthLabel(prevMonths[0]), 'info');
         return loadBudget();
       }
     }

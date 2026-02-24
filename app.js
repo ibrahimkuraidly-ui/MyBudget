@@ -362,12 +362,25 @@ async function loadTransactions() {
   const el = document.getElementById('txn-content');
   el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {
-    const allTxns = await api('GET', 'transactions',
-      `user_id=eq.${currentUserId}&${monthRange(_txnMonth)}&select=*&order=date.desc,created_at.desc`);
+    const [allTxns, monthBudgets, allIncomeGoals] = await Promise.all([
+      api('GET', 'transactions', `user_id=eq.${currentUserId}&${monthRange(_txnMonth)}&select=*&order=date.desc,created_at.desc`),
+      api('GET', 'budgets',      `user_id=eq.${currentUserId}&month=eq.${_txnMonth}&category=neq.__income_goal__&select=limit_amount`),
+      api('GET', 'budgets',      `user_id=eq.${currentUserId}&category=eq.__income_goal__&select=*&order=created_at.desc`),
+    ]);
 
     const income   = allTxns.filter(t => t.type === 'income').reduce((s, t) => s + parseFloat(t.amount), 0);
     const expenses = allTxns.filter(t => t.type === 'expense').reduce((s, t) => s + parseFloat(t.amount), 0);
     const txns     = _txnFilter === 'all' ? allTxns : allTxns.filter(t => t.type === _txnFilter);
+
+    const today = new Date().toISOString().slice(0, 10);
+    const activeGoal = allIncomeGoals.find(g => {
+      if (!g.month.includes('_')) return false;
+      const [s, e] = g.month.split('_');
+      return today >= s && today <= e;
+    }) || allIncomeGoals[0] || null;
+    const incomeGoalAmt = activeGoal ? parseFloat(activeGoal.limit_amount) : null;
+    const totalBudgeted = monthBudgets.reduce((s, b) => s + parseFloat(b.limit_amount), 0);
+    const txnDelta      = incomeGoalAmt != null ? incomeGoalAmt - totalBudgeted : null;
 
     let html = `
       <div class="month-bar">
@@ -379,6 +392,13 @@ async function loadTransactions() {
         <div class="stat-card"><div class="stat-label">Income</div><div class="stat-value green">${fmtS(income)}</div></div>
         <div class="stat-card"><div class="stat-label">Expenses</div><div class="stat-value red">${fmtS(expenses)}</div></div>
       </div>
+      ${txnDelta !== null ? `<div class="card" style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;padding:12px 16px">
+        <div>
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">Unallocated Budget</div>
+          <div style="font-size:11px;color:var(--muted)">Income ${fmtS(incomeGoalAmt)} − Budgeted ${fmtS(totalBudgeted)}</div>
+        </div>
+        <div style="font-size:22px;font-weight:800;color:${txnDelta >= 0 ? 'var(--green)' : 'var(--red)'}">${txnDelta >= 0 ? '' : '-'}${fmtS(Math.abs(txnDelta))}</div>
+      </div>` : ''}
       <div style="display:flex;gap:8px;margin-bottom:14px">
         <button class="btn btn-sm ${_txnFilter === 'all' ? 'btn-primary' : 'btn-secondary'}" onclick="_txnFilter='all';loadTransactions()">All</button>
         <button class="btn btn-sm ${_txnFilter === 'income' ? 'btn-primary' : 'btn-secondary'}" onclick="_txnFilter='income';loadTransactions()">Income</button>
@@ -484,16 +504,43 @@ async function loadBudget() {
   const el = document.getElementById('budget-content');
   el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {
-    const [budgets, txns] = await Promise.all([
+    const [budgets, txns, allIncomeGoals] = await Promise.all([
       api('GET', 'budgets',      `user_id=eq.${currentUserId}&month=eq.${_budgetMonth}&select=*&order=category`),
       api('GET', 'transactions', `user_id=eq.${currentUserId}&${monthRange(_budgetMonth)}&type=eq.expense&select=category,amount`),
+      api('GET', 'budgets',      `user_id=eq.${currentUserId}&category=eq.__income_goal__&select=*&order=created_at.desc`),
     ]);
 
-    const expenseBudgets = budgets.filter(b => b.category !== '__income_goal__');
+    let expenseBudgets = budgets.filter(b => b.category !== '__income_goal__');
+
+    // Auto-copy budgets from most recent month if none exist for this month
+    if (expenseBudgets.length === 0) {
+      const prev = await api('GET', 'budgets',
+        `user_id=eq.${currentUserId}&category=neq.__income_goal__&select=*&order=month.desc`);
+      const prevMonths = [...new Set(prev.map(b => b.month))].filter(m => m !== _budgetMonth);
+      if (prevMonths.length > 0) {
+        const toCopy = prev.filter(b => b.month === prevMonths[0]);
+        await Promise.all(toCopy.map(b =>
+          api('POST', 'budgets', '', { user_id: currentUserId, month: _budgetMonth, category: b.category, limit_amount: b.limit_amount })
+        ));
+        showToast('Budget copied from ' + monthLabel(prevMonths[0]), 'info');
+        return loadBudget();
+      }
+    }
+
+    // Find active income goal
+    const today = new Date().toISOString().slice(0, 10);
+    const activeGoal = allIncomeGoals.find(g => {
+      if (!g.month.includes('_')) return false;
+      const [s, e] = g.month.split('_');
+      return today >= s && today <= e;
+    }) || allIncomeGoals[0] || null;
+    const incomeGoalAmt = activeGoal ? parseFloat(activeGoal.limit_amount) : null;
+
     const spentByCat  = {};
     txns.forEach(t => { spentByCat[t.category] = (spentByCat[t.category] || 0) + parseFloat(t.amount); });
     const totalBudget = expenseBudgets.reduce((s, b) => s + parseFloat(b.limit_amount), 0);
     const totalSpent  = expenseBudgets.reduce((s, b) => s + (spentByCat[b.category] || 0), 0);
+    const delta       = incomeGoalAmt != null ? incomeGoalAmt - totalBudget : null;
 
     let html = `
       <div class="month-bar">
@@ -513,6 +560,24 @@ async function loadBudget() {
           <div class="progress-fill ${p >= 100 ? 'over' : p >= 80 ? 'warn' : 'safe'}" style="width:${p}%"></div>
         </div>
         <div style="font-size:12px;color:var(--muted);margin-top:4px">${p}% used · ${fmtS(Math.max(0, totalBudget - totalSpent))} remaining</div>
+      </div>`;
+    }
+
+    if (delta !== null) {
+      html += `<div class="card" style="border-color:${delta >= 0 ? 'var(--green)' : 'var(--red)'}40">
+        <div class="card-title">Income vs Budget</div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+          <span style="color:var(--muted)">Expected Income</span>
+          <span style="color:var(--green);font-weight:600">${fmtS(incomeGoalAmt)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:10px">
+          <span style="color:var(--muted)">Total Budgeted</span>
+          <span style="font-weight:600">${fmtS(totalBudget)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid var(--border)">
+          <span style="font-size:14px;font-weight:700">${delta >= 0 ? 'Unallocated' : 'Over-Allocated'}</span>
+          <span style="font-size:20px;font-weight:800;color:${delta >= 0 ? 'var(--green)' : 'var(--red)'}">${delta >= 0 ? '' : '-'}${fmtS(Math.abs(delta))}</span>
+        </div>
       </div>`;
     }
 

@@ -468,11 +468,13 @@ function openAddTxn() {
 }
 
 async function submitTxn() {
-  const amount      = parseFloat(document.getElementById('t-amount').value);
-  const category    = document.getElementById('t-cat').value;
-  const date        = document.getElementById('t-date').value;
-  const description = document.getElementById('t-desc').value.trim();
+  const amount = parseFloat(document.getElementById('t-amount').value);
+  const category = document.getElementById('t-cat').value;
+  const date = document.getElementById('t-date').value;
+  const d  = document.getElementById('t-desc').value.trim();
+  const pm = document.getElementById('t-pm').value;
   if (!amount || !date) { showToast('Enter amount and date', 'error'); return; }
+  const description = JSON.stringify({ d, pm });
   try {
     await api('POST', 'transactions', '', { user_id: currentUserId, type: 'expense', amount, category, date, description });
     closeModal();

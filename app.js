@@ -308,6 +308,16 @@ async function loadDashboard() {
         </div>
         <div style="font-size:11px;color:var(--muted);margin-top:4px">Normal Spending · Groceries · Sara Allowance</div>
       </div>
+      <div class="stat-row two" style="margin-bottom:8px">
+        <div class="stat-card" onclick="openCardPayment('Capital One',${coBalance})" style="cursor:pointer">
+          <div class="stat-label">Capital One</div>
+          <div class="stat-value ${coBalance > 0 ? 'red' : 'green'}">${fmt(coBalance)}</div>
+        </div>
+        <div class="stat-card" onclick="openCardPayment('Secure',${secBalance})" style="cursor:pointer">
+          <div class="stat-label">Secure</div>
+          <div class="stat-value ${secBalance > 0 ? 'red' : 'green'}">${fmt(secBalance)}</div>
+        </div>
+      </div>
       <div class="month-bar">
         <button class="month-nav" onclick="_dashMonth=prevMonth(_dashMonth);loadDashboard()">&#8249;</button>
         <span class="month-label">${monthLabel(_dashMonth)}</span>

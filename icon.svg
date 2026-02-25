@@ -1,10 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <!-- Dark background -->
   <rect width="512" height="512" rx="110" fill="#0f1117"/>
-  <!-- White badge -->
+  <!-- Light badge -->
   <rect x="108" y="108" width="296" height="296" rx="66" fill="#f1f5f9"/>
-  <!-- Glow -->
-  <rect x="108" y="108" width="296" height="296" rx="66" fill="none" stroke="#f1f5f9" stroke-width="8" opacity="0.3"/>
-  <!-- Dollar sign -->
-  <text x="256" y="342" font-family="sans-serif" font-size="230" font-weight="bold" text-anchor="middle" fill="#0f1117">$</text>
+  <!-- Upper arc of S (opening right, going around left) -->
+  <path d="M 296,170 A 62,62 0 1,0 296,265"
+        fill="none" stroke="#0f1117" stroke-width="26" stroke-linecap="round"/>
+  <!-- Lower arc of S (opening left, going around right) -->
+  <path d="M 216,248 A 62,62 0 1,1 216,343"
+        fill="none" stroke="#0f1117" stroke-width="26" stroke-linecap="round"/>
+  <!-- Vertical bar with rounded ends -->
+  <rect x="246" y="138" width="20" height="236" rx="10" fill="#0f1117"/>
 </svg>

@@ -282,8 +282,7 @@ async function loadDashboard() {
       return limit > 0 && (byCat[b.category] || 0) >= limit * 0.85;
     });
 
-    // Top spending categories
-    const topCats = Object.entries(byCat).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const recentTxns = txns.slice(0, 5);
 
     let html = `
       <div class="nw-banner">

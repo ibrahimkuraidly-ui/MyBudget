@@ -123,6 +123,8 @@ function fmt(n)      { return '$' + Math.abs(n || 0).toLocaleString('en-US', { m
 function fmtS(n)     { return '$' + Math.abs(n || 0).toLocaleString('en-US', { maximumFractionDigits: 0 }); }
 function fmtDate(d)  { return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
 function pct(a, b)   { return b ? Math.min(100, Math.round((a / b) * 100)) : 0; }
+function txnDesc(t)  { if (!t.description) return t.category; try { return JSON.parse(t.description).d || t.category; } catch { return t.description; } }
+function txnCard(t)  { if (!t.description) return 'Debit'; try { return JSON.parse(t.description).pm || 'Debit'; } catch { return 'Debit'; } }
 
 // Budget cycle: 25th of prev month → 24th of this month.
 // If today is the 25th or later, we're already in next month's cycle.

@@ -413,7 +413,7 @@ async function loadTransactions() {
   el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {
     const [txns, allIncomeGoals] = await Promise.all([
-      api('GET', 'transactions', `user_id=eq.${currentUserId}&${monthRange(_txnMonth)}&type=eq.expense&select=*&order=date.desc,created_at.desc`),
+      api('GET', 'transactions', `user_id=eq.${currentUserId}&${monthRange(_txnMonth)}&type=eq.expense&category=neq.__card_payment__&select=*&order=date.desc,created_at.desc`),
       api('GET', 'budgets',      `user_id=eq.${currentUserId}&category=eq.__income_goal__&select=*&order=created_at.desc`),
     ]);
 

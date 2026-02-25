@@ -244,7 +244,7 @@ async function loadDashboard() {
       api('GET', 'savings_goals', `user_id=eq.${currentUserId}&select=*`),
       api('GET', 'investment_snapshots', `user_id=eq.${currentUserId}&select=*&order=date.desc`),
       api('GET', 'budgets', `user_id=eq.${currentUserId}&category=eq.__income_goal__&select=*&order=created_at.desc`),
-      api('GET', 'transactions', `user_id=eq.${currentUserId}&type=in.(expense,card_payment)&select=amount,description,type,category`),
+      api('GET', 'transactions', `user_id=eq.${currentUserId}&type=eq.expense&select=amount,description,category`),
     ]);
 
     const today = new Date().toISOString().slice(0, 10);

@@ -555,8 +555,8 @@ async function loadBudget() {
             <span style="font-size:11px;color:var(--muted)">Income − Fixed</span>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:${nsBudget > 0 ? '6px' : '0'}">
-            <span style="color:${nsSpent > 0 ? 'var(--red)' : 'var(--muted)'}">Spent: ${fmtS(nsSpent)}</span>
-            <span style="color:var(--muted)">${nsBudget > 0 ? 'Budget: ' + fmtS(nsBudget) : 'Set income goal to see budget'}</span>
+            <span style="color:${nsSpent > 0 ? 'var(--red)' : 'var(--muted)'}">Spent: ${fmt(nsSpent)}</span>
+            <span style="color:var(--muted)">${nsBudget > 0 ? 'Budget: ' + fmt(nsBudget) : 'Set income goal to see budget'}</span>
           </div>
           ${nsBudget > 0 ? `
           <div class="progress-bar"><div class="progress-fill ${nsP >= 100 ? 'over' : nsP >= 80 ? 'warn' : 'safe'}" style="width:${nsP}%"></div></div>

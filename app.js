@@ -587,7 +587,7 @@ async function loadBudget() {
     });
 
     // Totals row
-    const totalSpent = BUDGET_ITEMS.reduce((s, cat) => s + (spentMap[cat] || 0), 0);
+    const totalSpent = BUDGET_ITEMS.reduce((s, cat) => s + (spentMap[cat] || 0), 0) + nsSpent;
     html += `
       <div class="card" style="margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:center">

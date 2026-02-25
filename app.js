@@ -260,13 +260,6 @@ async function loadDashboard() {
     const incomeGoalAmt  = activeGoal ? parseFloat(activeGoal.limit_amount) : null;
     const remaining      = incomeGoalAmt != null ? incomeGoalAmt - expenses : null;
 
-    // Net worth
-    const latestByAcct = {};
-    snapshots.forEach(s => { if (latestByAcct[s.account_id] == null) latestByAcct[s.account_id] = parseFloat(s.balance); });
-    const investTotal  = Object.values(latestByAcct).reduce((a, b) => a + b, 0);
-    const savingsTotal = goals.reduce((s, g) => s + parseFloat(g.current_amount || 0), 0);
-    const netWorth     = investTotal + savingsTotal;
-
     // Spending by category
     const byCat = {};
     txns.forEach(t => { byCat[t.category] = (byCat[t.category] || 0) + parseFloat(t.amount); });
@@ -274,6 +267,14 @@ async function loadDashboard() {
     // Budget map
     const budgetMap = {};
     budgets.forEach(b => { budgetMap[b.category] = parseFloat(b.limit_amount); });
+
+    // Available to spend: Normal Spending + Groceries + Sara Allowance remaining
+    const totalBudgeted  = BUDGET_ITEMS.reduce((s, cat) => s + (budgetMap[cat] || 0), 0);
+    const nsBudget       = incomeGoalAmt != null ? incomeGoalAmt - totalBudgeted : null;
+    const nsRemaining    = nsBudget != null ? nsBudget - (byCat['Normal Spending'] || 0) : null;
+    const grocRemaining  = (budgetMap['Groceries'] || 0) - (byCat['Groceries'] || 0);
+    const saraRemaining  = (budgetMap['Sara Allowance'] || 0) - (byCat['Sara Allowance'] || 0);
+    const flexRemaining  = nsRemaining != null ? nsRemaining + grocRemaining + saraRemaining : null;
 
     // Budget alerts (items with a limit set that are 85%+ used)
     const alerts = budgets.filter(b => {

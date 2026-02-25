@@ -84,11 +84,8 @@
 
   <script src="app.js"></script>
   <script>
-    // Unregister any old service workers
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(regs => {
-        regs.forEach(r => r.unregister());
-      });
+      navigator.serviceWorker.register('./sw.js');
     }
     initAuth();
   </script>

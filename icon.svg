@@ -1,15 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <!-- Dark background -->
   <rect width="512" height="512" rx="110" fill="#0f1117"/>
-  <!-- Light badge -->
+  <!-- White block -->
   <rect x="108" y="108" width="296" height="296" rx="66" fill="#f1f5f9"/>
-  <!-- Dollar sign: two semicircles forming a proper S, plus vertical bar -->
-  <!-- Upper arc: bulges LEFT (counterclockwise), opening faces right = top of $ -->
-  <path d="M 256,140 A 60,60 0 0,0 256,260"
-        fill="none" stroke="#0f1117" stroke-width="28" stroke-linecap="round"/>
-  <!-- Lower arc: bulges RIGHT (clockwise), opening faces left = bottom of $ -->
-  <path d="M 256,260 A 60,60 0 0,1 256,380"
-        fill="none" stroke="#0f1117" stroke-width="28" stroke-linecap="round"/>
-  <!-- Vertical bar through center (extends above and below the S) -->
-  <rect x="243" y="118" width="26" height="276" rx="13" fill="#0f1117"/>
+  <!-- Dollar sign text, centered in badge -->
+  <text x="256" y="330"
+        font-family="sans-serif" font-weight="bold" font-size="200"
+        fill="#0f1117" text-anchor="middle">$</text>
 </svg>

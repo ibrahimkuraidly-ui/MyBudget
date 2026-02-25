@@ -123,23 +123,49 @@ function fmt(n)      { return '$' + Math.abs(n || 0).toLocaleString('en-US', { m
 function fmtS(n)     { return '$' + Math.abs(n || 0).toLocaleString('en-US', { maximumFractionDigits: 0 }); }
 function fmtDate(d)  { return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
 function pct(a, b)   { return b ? Math.min(100, Math.round((a / b) * 100)) : 0; }
-function currMonth() { return new Date().toISOString().slice(0, 7); }
+
+// Budget cycle: 25th of prev month → 24th of this month.
+// If today is the 25th or later, we're already in next month's cycle.
+// Uses local date math (no toISOString) to avoid UTC timezone shifting.
+function currMonth() {
+  const now = new Date();
+  let y = now.getFullYear();
+  let m = now.getMonth() + 1; // 1-indexed
+  if (now.getDate() >= 25) {
+    m++;
+    if (m > 12) { m = 1; y++; }
+  }
+  return `${y}-${String(m).padStart(2, '0')}`;
+}
+
 function monthLabel(ym) {
   const [y, m] = ym.split('-');
   return new Date(Number(y), Number(m) - 1, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
 }
+
+// Returns the Supabase date filter for a budget cycle month (YYYY-MM).
+// Cycle runs from the 25th of the previous month through the 24th of ym.
+// e.g. "2026-03" → date >= 2026-02-25 AND date <= 2026-03-24
 function monthRange(ym) {
   const [y, m] = ym.split('-').map(Number);
-  const next = new Date(y, m, 1).toISOString().slice(0, 7);
-  return `date=gte.${ym}-01&date=lt.${next}-01`;
+  const prevYear  = m === 1 ? y - 1 : y;
+  const prevMon   = m === 1 ? 12 : m - 1;
+  const startStr  = `${prevYear}-${String(prevMon).padStart(2, '0')}-25`;
+  const endStr    = `${ym}-24`;
+  return `date=gte.${startStr}&date=lte.${endStr}`;
 }
+
 function prevMonth(ym) {
   const [y, m] = ym.split('-').map(Number);
-  return new Date(y, m - 2, 1).toISOString().slice(0, 7);
+  const pm = m === 1 ? 12 : m - 1;
+  const py = m === 1 ? y - 1 : y;
+  return `${py}-${String(pm).padStart(2, '0')}`;
 }
 function nextMonth(ym) {
   const [y, m] = ym.split('-').map(Number);
-  return new Date(y, m, 1).toISOString().slice(0, 7);
+  const nm = m === 12 ? 1 : m + 1;
+  const ny = m === 12 ? y + 1 : y;
+  return `${ny}-${String(nm).padStart(2, '0')}`;
 }
 
 function showToast(msg, type = 'info') {

@@ -334,18 +334,15 @@ async function loadDashboard() {
       html += `</div>`;
     }
 
-    if (topCats.length) {
-      html += `<div class="card"><div class="card-title">Top Spending</div>`;
-      topCats.forEach(([cat, amt]) => {
-        const limit = budgetMap[cat] || null;
-        const p     = limit ? pct(amt, limit) : null;
-        html += `<div style="margin-bottom:12px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-            <span style="font-size:13px;color:var(--text)">${cat}</span>
-            <span style="font-size:13px;font-weight:700;color:var(--red)">${fmtS(amt)}</span>
+    if (recentTxns.length) {
+      html += `<div class="card"><div class="card-title">Recent Spending</div>`;
+      recentTxns.forEach(t => {
+        html += `<div class="list-item">
+          <div class="list-item-left">
+            <div class="list-item-title">${t.description || t.category}</div>
+            <div class="list-item-sub"><span class="cat-tag">${t.category}</span> · ${fmtDate(t.date)}</div>
           </div>
-          ${p !== null ? `<div class="progress-bar"><div class="progress-fill ${p >= 100 ? 'over' : p >= 80 ? 'warn' : 'safe'}" style="width:${p}%"></div></div>
-          <div style="font-size:11px;color:var(--muted)">of ${fmtS(limit)} budget · ${p}%</div>` : ''}
+          <span class="amount-expense">-${fmt(t.amount)}</span>
         </div>`;
       });
       html += `</div>`;

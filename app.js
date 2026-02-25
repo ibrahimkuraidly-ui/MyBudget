@@ -535,12 +535,35 @@ async function loadBudget() {
     const totalBudgeted = ordered.reduce((s, b) => s + parseFloat(b.limit_amount), 0);
     const normalSpending = incomeGoalAmt != null ? incomeGoalAmt - totalBudgeted : null;
 
+    const nsSpent  = spentMap['Normal Spending'] || 0;
+    const nsBudget = normalSpending;
+
     let html = `
       <div class="month-bar">
         <button class="month-nav" onclick="_budgetMonth=prevMonth(_budgetMonth);loadBudget()">&#8249;</button>
         <span class="month-label">${monthLabel(_budgetMonth)}</span>
         <button class="month-nav" onclick="_budgetMonth=nextMonth(_budgetMonth);loadBudget()">&#8250;</button>
       </div>`;
+
+    // Normal Spending card — always first
+    if (nsBudget !== null) {
+      const nsP = nsBudget > 0 ? pct(nsSpent, nsBudget) : 0;
+      html += `
+        <div class="card" style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div style="font-size:15px;font-weight:700">Normal Spending</div>
+            <span style="font-size:11px;color:var(--muted)">Income − Fixed</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:${nsBudget > 0 ? '6px' : '0'}">
+            <span style="color:${nsSpent > 0 ? 'var(--red)' : 'var(--muted)'}">Spent: ${fmtS(nsSpent)}</span>
+            <span style="color:var(--muted)">${nsBudget > 0 ? 'Budget: ' + fmtS(nsBudget) : 'Set income goal to see budget'}</span>
+          </div>
+          ${nsBudget > 0 ? `
+          <div class="progress-bar"><div class="progress-fill ${nsP >= 100 ? 'over' : nsP >= 80 ? 'warn' : 'safe'}" style="width:${nsP}%"></div></div>
+          <div style="text-align:right;font-size:11px;color:var(--muted);margin-top:3px">${nsP}%</div>
+          ` : ''}
+        </div>`;
+    }
 
     ordered.forEach(b => {
       const budget = parseFloat(b.limit_amount);

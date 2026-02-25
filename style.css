@@ -99,7 +99,7 @@ header { position: fixed; top: 0; left: 0; right: 0; height: var(--header-h); ba
 
 /* Month bar */
 .month-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.month-nav { background: none; border: none; color: var(--green); font-size: 24px; cursor: pointer; padding: 2px 8px; line-height: 1; }
+.month-nav { background: none; border: none; color: var(--accent); font-size: 24px; cursor: pointer; padding: 2px 8px; line-height: 1; }
 .month-label { font-size: 15px; font-weight: 600; color: var(--text); }
 
 /* Badge */

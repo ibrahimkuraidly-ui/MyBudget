@@ -233,7 +233,7 @@ function loadPage(tab) {
 let _dashMonth = currMonth();
 
 async function loadDashboard() {
-  hideFab();
+  showFab();
   const el = document.getElementById('dash-content');
   el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {

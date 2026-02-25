@@ -341,8 +341,8 @@ async function loadDashboard() {
       recentTxns.forEach(t => {
         html += `<div class="list-item">
           <div class="list-item-left">
-            <div class="list-item-title">${t.description || t.category}</div>
-            <div class="list-item-sub"><span class="cat-tag">${t.category}</span> · ${fmtDate(t.date)}</div>
+            <div class="list-item-title">${txnDesc(t)}</div>
+            <div class="list-item-sub"><span class="cat-tag">${t.category}</span>${txnCard(t) !== 'Debit' ? ` · <span class="cat-tag">${txnCard(t)}</span>` : ''} · ${fmtDate(t.date)}</div>
           </div>
           <span class="amount-expense">-${fmt(t.amount)}</span>
         </div>`;

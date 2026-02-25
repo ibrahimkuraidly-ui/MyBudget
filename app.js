@@ -266,13 +266,13 @@ async function loadDashboard() {
     // Card balances (all-time)
     let coBalance = 0, secBalance = 0;
     allCardTxns.forEach(t => {
-      if (t.type === 'expense') {
-        const card = txnCard(t);
-        if (card === 'Capital One') coBalance += parseFloat(t.amount);
+      const card = txnCard(t);
+      if (t.category === '__card_payment__') {
+        if (card === 'Capital One') coBalance  -= parseFloat(t.amount);
+        if (card === 'Secure')      secBalance -= parseFloat(t.amount);
+      } else {
+        if (card === 'Capital One') coBalance  += parseFloat(t.amount);
         if (card === 'Secure')      secBalance += parseFloat(t.amount);
-      } else if (t.type === 'card_payment') {
-        if (t.category === 'Capital One') coBalance  -= parseFloat(t.amount);
-        if (t.category === 'Secure')      secBalance -= parseFloat(t.amount);
       }
     });
 

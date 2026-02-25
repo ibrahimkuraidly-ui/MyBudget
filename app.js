@@ -447,7 +447,7 @@ async function loadTransactions() {
 
 function openAddTxn() {
   const today = new Date().toISOString().slice(0, 10);
-  const cats  = [...BUDGET_ITEMS, 'Other'];
+  const cats  = ['Normal Spending', ...BUDGET_ITEMS, 'Other'];
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
       <div class="modal">

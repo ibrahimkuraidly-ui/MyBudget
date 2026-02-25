@@ -600,25 +600,6 @@ async function loadBudget() {
         </div>
       </div>`;
 
-    // Normal Spending delta card
-    if (normalSpending !== null) {
-      html += `
-      <div class="card" style="border-color:${normalSpending >= 0 ? 'var(--green)' : 'var(--red)'}60">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <div style="font-size:15px;font-weight:700">Normal Spending</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:3px">
-              Income ${fmtS(incomeGoalAmt)} − Budgeted ${fmtS(totalBudgeted)}
-            </div>
-          </div>
-          <span style="font-size:26px;font-weight:800;color:${normalSpending >= 0 ? 'var(--green)' : 'var(--red)'}">
-            ${normalSpending >= 0 ? '' : '-'}${fmtS(Math.abs(normalSpending))}
-          </span>
-        </div>
-      </div>`;
-    } else {
-      html += `<div style="font-size:12px;color:var(--muted);text-align:center;padding:8px 0">Set your income goal on the Dashboard to see Normal Spending</div>`;
-    }
 
     el.innerHTML = html;
   } catch (e) {

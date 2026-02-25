@@ -425,8 +425,8 @@ async function loadTransactions() {
         items.forEach(t => {
           html += `<div class="list-item">
             <div class="list-item-left">
-              <div class="list-item-title">${t.description || t.category}</div>
-              <div class="list-item-sub"><span class="cat-tag">${t.category}</span></div>
+              <div class="list-item-title">${txnDesc(t)}</div>
+              <div class="list-item-sub"><span class="cat-tag">${t.category}</span>${txnCard(t) !== 'Debit' ? ` · <span class="cat-tag">${txnCard(t)}</span>` : ''}</div>
             </div>
             <div class="list-item-right" style="display:flex;align-items:center;gap:8px">
               <span class="amount-expense">-${fmt(t.amount)}</span>

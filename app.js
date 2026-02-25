@@ -458,6 +458,7 @@ function openAddTxn() {
         <div class="field"><label>Category</label><select id="t-cat">${cats.map(c => `<option>${c}</option>`).join('')}</select></div>
         <div class="field"><label>Date</label><input type="date" id="t-date" value="${today}"></div>
         <div class="field"><label>Description (optional)</label><input type="text" id="t-desc" placeholder="e.g. Grocery run, Netflix"></div>
+        <div class="field"><label>Card</label><select id="t-pm"><option>Debit</option><option>Capital One</option><option>Secure</option></select></div>
         <div class="modal-actions">
           <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
           <button class="btn btn-primary" onclick="submitTxn()">Add</button>

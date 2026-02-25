@@ -563,7 +563,7 @@ async function loadBudget() {
     const [budgets, allIncomeGoals, transactions] = await Promise.all([
       api('GET', 'budgets',      `user_id=eq.${currentUserId}&month=eq.${_budgetMonth}&category=neq.__income_goal__&select=*`),
       api('GET', 'budgets',      `user_id=eq.${currentUserId}&category=eq.__income_goal__&select=*&order=created_at.desc`),
-      api('GET', 'transactions', `user_id=eq.${currentUserId}&${monthRange(_budgetMonth)}&type=eq.expense&select=amount,category`),
+      api('GET', 'transactions', `user_id=eq.${currentUserId}&${monthRange(_budgetMonth)}&type=eq.expense&category=neq.__card_payment__&select=amount,category`),
     ]);
 
     // Ensure all 9 items exist for this month — create any missing ones at $0

@@ -516,6 +516,39 @@ async function deleteTxn(id) {
   } catch (e) { showToast(e.message, 'error'); }
 }
 
+function openCardPayment(card, balance) {
+  document.getElementById('modal-root').innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-title">${card}</div>
+        <div style="text-align:center;margin-bottom:16px">
+          <div style="font-size:13px;color:var(--muted)">Current Balance</div>
+          <div style="font-size:28px;font-weight:800;color:${balance > 0 ? 'var(--red)' : 'var(--green)'}">$${Math.abs(balance).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+        </div>
+        <div class="field">
+          <label>Payment Amount</label>
+          <input type="number" id="cp-amount" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="submitCardPayment('${card}')">Record Payment</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function submitCardPayment(card) {
+  const amount = parseFloat(document.getElementById('cp-amount').value);
+  if (!amount || amount <= 0) { showToast('Enter a valid amount', 'error'); return; }
+  const date = new Date().toISOString().slice(0, 10);
+  try {
+    await api('POST', 'transactions', '', { user_id: currentUserId, type: 'card_payment', amount, category: card, date, description: 'Card Payment' });
+    closeModal();
+    showToast('Payment recorded', 'success');
+    loadDashboard();
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
 // ─── Budget ──────────────────────────────────────────────────────────────────
 
 const BUDGET_ITEMS = ['Rent','Groceries','Phone Bill','Electric Bill','Sara Allowance','Savings','Baba Allowance','Auto Insurance','Subscriptions'];

@@ -330,7 +330,7 @@ async function loadDashboard() {
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${activeGoal ? '10px' : '0'}">
           <div>
-            <div class="card-title" style="margin-bottom:2px">Expected Income</div>
+            <div class="card-title" style="margin-bottom:2px">Income</div>
             ${activeGoal
               ? `<div style="font-size:22px;font-weight:800;color:var(--green)">${fmtS(activeGoal.limit_amount)}</div>
                  ${cycleStart && cycleEnd ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">${fmtDate(cycleStart)} – ${fmtDate(cycleEnd)}</div>` : ''}`

@@ -263,6 +263,19 @@ async function loadDashboard() {
     const incomeGoalAmt  = activeGoal ? parseFloat(activeGoal.limit_amount) : null;
     const remaining      = incomeGoalAmt != null ? incomeGoalAmt - expenses : null;
 
+    // Card balances (all-time)
+    let coBalance = 0, secBalance = 0;
+    allCardTxns.forEach(t => {
+      if (t.type === 'expense') {
+        const card = txnCard(t);
+        if (card === 'Capital One') coBalance += parseFloat(t.amount);
+        if (card === 'Secure')      secBalance += parseFloat(t.amount);
+      } else if (t.type === 'card_payment') {
+        if (t.category === 'Capital One') coBalance  -= parseFloat(t.amount);
+        if (t.category === 'Secure')      secBalance -= parseFloat(t.amount);
+      }
+    });
+
     // Spending by category
     const byCat = {};
     txns.forEach(t => { byCat[t.category] = (byCat[t.category] || 0) + parseFloat(t.amount); });

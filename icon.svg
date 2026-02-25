@@ -3,12 +3,13 @@
   <rect width="512" height="512" rx="110" fill="#0f1117"/>
   <!-- Light badge -->
   <rect x="108" y="108" width="296" height="296" rx="66" fill="#f1f5f9"/>
-  <!-- Upper arc of S (opening right, going around left) -->
-  <path d="M 296,170 A 62,62 0 1,0 296,265"
-        fill="none" stroke="#0f1117" stroke-width="26" stroke-linecap="round"/>
-  <!-- Lower arc of S (opening left, going around right) -->
-  <path d="M 216,248 A 62,62 0 1,1 216,343"
-        fill="none" stroke="#0f1117" stroke-width="26" stroke-linecap="round"/>
-  <!-- Vertical bar with rounded ends -->
-  <rect x="246" y="138" width="20" height="236" rx="10" fill="#0f1117"/>
+  <!-- Dollar sign: two semicircles forming a proper S, plus vertical bar -->
+  <!-- Upper arc: bulges LEFT (counterclockwise), opening faces right = top of $ -->
+  <path d="M 256,140 A 60,60 0 0,0 256,260"
+        fill="none" stroke="#0f1117" stroke-width="28" stroke-linecap="round"/>
+  <!-- Lower arc: bulges RIGHT (clockwise), opening faces left = bottom of $ -->
+  <path d="M 256,260 A 60,60 0 0,1 256,380"
+        fill="none" stroke="#0f1117" stroke-width="28" stroke-linecap="round"/>
+  <!-- Vertical bar through center (extends above and below the S) -->
+  <rect x="243" y="118" width="26" height="276" rx="13" fill="#0f1117"/>
 </svg>

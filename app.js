@@ -408,7 +408,7 @@ async function loadDashboard() {
 let _txnMonth = currMonth();
 
 async function loadTransactions() {
-  showFab();
+  hideFab();
   const el = document.getElementById('txn-content');
   el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {

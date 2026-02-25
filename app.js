@@ -237,7 +237,7 @@ async function loadDashboard() {
   try {
     const mr = monthRange(_dashMonth);
     const [txns, budgets, goals, snapshots, allIncomeGoals] = await Promise.all([
-      api('GET', 'transactions', `user_id=eq.${currentUserId}&${mr}&type=eq.expense&select=*&order=date.desc`),
+      api('GET', 'transactions', `user_id=eq.${currentUserId}&${mr}&type=eq.expense&select=*&order=date.desc,created_at.desc`),
       api('GET', 'budgets',      `user_id=eq.${currentUserId}&month=eq.${_dashMonth}&category=neq.__income_goal__&select=*`),
       api('GET', 'savings_goals', `user_id=eq.${currentUserId}&select=*`),
       api('GET', 'investment_snapshots', `user_id=eq.${currentUserId}&select=*&order=date.desc`),

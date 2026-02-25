@@ -238,12 +238,13 @@ async function loadDashboard() {
   el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {
     const mr = monthRange(_dashMonth);
-    const [txns, budgets, goals, snapshots, allIncomeGoals] = await Promise.all([
+    const [txns, budgets, goals, snapshots, allIncomeGoals, allCardTxns] = await Promise.all([
       api('GET', 'transactions', `user_id=eq.${currentUserId}&${mr}&type=eq.expense&select=*&order=date.desc,created_at.desc`),
       api('GET', 'budgets',      `user_id=eq.${currentUserId}&month=eq.${_dashMonth}&category=neq.__income_goal__&select=*`),
       api('GET', 'savings_goals', `user_id=eq.${currentUserId}&select=*`),
       api('GET', 'investment_snapshots', `user_id=eq.${currentUserId}&select=*&order=date.desc`),
       api('GET', 'budgets', `user_id=eq.${currentUserId}&category=eq.__income_goal__&select=*&order=created_at.desc`),
+      api('GET', 'transactions', `user_id=eq.${currentUserId}&type=in.(expense,card_payment)&select=amount,description,type,category`),
     ]);
 
     const today = new Date().toISOString().slice(0, 10);

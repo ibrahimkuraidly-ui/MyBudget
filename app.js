@@ -276,10 +276,10 @@ async function loadDashboard() {
     const saraRemaining  = (budgetMap['Sara Allowance'] || 0) - (byCat['Sara Allowance'] || 0);
     const flexRemaining  = nsRemaining != null ? nsRemaining + grocRemaining + saraRemaining : null;
 
-    // Budget alerts (items with a limit set that are 85%+ used)
+    // Budget alerts (only items actually over their limit)
     const alerts = budgets.filter(b => {
       const limit = parseFloat(b.limit_amount);
-      return limit > 0 && (byCat[b.category] || 0) >= limit * 0.85;
+      return limit > 0 && (byCat[b.category] || 0) > limit;
     });
 
     const recentTxns = txns.slice(0, 5);

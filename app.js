@@ -3,7 +3,7 @@ const SUPABASE_URL = 'https://ulrdmnzeoswlzuyxxzbx.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_yWV0O6uMKoc7E3BHmKPmiw_dIqDsN21';
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, storageKey: 'mybudget-auth' }
+  auth: { persistSession: true, autoRefreshToken: true, storageKey: 'helm-auth' }
 });
 
 let authToken = null;

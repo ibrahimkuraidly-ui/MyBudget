@@ -1169,7 +1169,7 @@ async function submitAccount() {
         date: new Date().toISOString().slice(0, 10), balance, contributions: balance
       });
     }
-    closeModal(); showToast('Account added', 'success'); loadInvestments();
+    closeModal(); showToast('Account added', 'success'); loadPortfolio();
   } catch (e) { showToast(e.message, 'error'); }
 }
 

@@ -85,6 +85,7 @@ function privVal(str) { return _privacyMode ? '••••' : str; }
 
 function togglePrivacy() {
   _privacyMode = !_privacyMode;
+  localStorage.setItem('helm-privacy', _privacyMode ? '1' : '0');
   updatePrivacyBtn();
   const activeTab = document.querySelector('.tab.active')?.dataset.tab;
   if (activeTab) loadPage(activeTab);

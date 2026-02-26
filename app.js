@@ -38,7 +38,8 @@ async function initAuth() {
 function showLogin() {
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('app-header').style.display = 'none';
-  document.getElementById('tab-bar').style.display = 'none';
+  document.getElementById('tab-bar-finance').style.display = 'none';
+  document.getElementById('tab-bar-invest').style.display = 'none';
   document.getElementById('content').style.display = 'none';
 }
 

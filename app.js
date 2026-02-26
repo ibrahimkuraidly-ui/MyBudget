@@ -1501,4 +1501,7 @@ async function loadMarkets() {
   html += `</div>`;
 
   el.innerHTML = html;
+  } catch (e) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-state-text">Error loading markets — try refreshing</div></div>`;
+  }
 }

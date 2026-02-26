@@ -1206,7 +1206,7 @@ async function deleteAccount(id) {
   try {
     await api('DELETE', 'investment_snapshots', `account_id=eq.${id}`);
     await api('DELETE', 'investment_accounts',  `id=eq.${id}`);
-    showToast('Deleted', 'success'); loadInvestments();
+    showToast('Deleted', 'success'); loadPortfolio();
   } catch (e) { showToast(e.message, 'error'); }
 }
 

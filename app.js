@@ -58,9 +58,10 @@ function showApp() {
   document.getElementById('opt-invest').innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>`;
   document.getElementById('opt-finance').classList.toggle('active', savedApp === 'finance');
   document.getElementById('opt-invest').classList.toggle('active', savedApp === 'invest');
-  const savedTab = localStorage.getItem('mybudget-tab') || 'dashboard';
-  const tab = savedTab === 'investments' ? 'portfolio' : savedTab;
-  activateTab(tab);
+  const savedTab = savedApp === 'invest'
+    ? (localStorage.getItem('helm-invest-tab')   || 'portfolio')
+    : (localStorage.getItem('helm-finance-tab')  || 'dashboard');
+  activateTab(savedTab);
 }
 
 function toggleAppSwitcher() {

@@ -316,11 +316,11 @@ async function loadDashboard() {
       <div class="stat-row two" style="margin-bottom:8px">
         <div class="stat-card" onclick="openCardPayment('Capital One',${coBalance})" style="cursor:pointer">
           <div class="stat-label">Capital One</div>
-          <div class="stat-value ${coBalance > 0 ? 'red' : 'green'}">${fmt(coBalance)}</div>
+          <div class="stat-value" style="color:${coBalance/7000>=0.6?'var(--red)':coBalance/7000>=0.3?'var(--orange)':'var(--green)'}">${fmt(coBalance)}</div>
         </div>
         <div class="stat-card" onclick="openCardPayment('Secure',${secBalance})" style="cursor:pointer">
           <div class="stat-label">Secure</div>
-          <div class="stat-value ${secBalance > 0 ? 'red' : 'green'}">${fmt(secBalance)}</div>
+          <div class="stat-value" style="color:${secBalance/1000>=0.6?'var(--red)':secBalance/1000>=0.3?'var(--orange)':'var(--green)'}">${fmt(secBalance)}</div>
         </div>
       </div>
       <div class="stat-row two">

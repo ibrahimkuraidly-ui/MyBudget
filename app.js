@@ -581,7 +581,7 @@ async function loadDashboard() {
           <div>
             <div class="card-title" style="margin-bottom:2px">Income</div>
             ${activeGoal
-              ? `<div style="font-size:22px;font-weight:800;color:var(--green)">${fmtS(activeGoal.limit_amount)}</div>
+              ? `<div style="font-size:22px;font-weight:800;color:var(--green)">${privVal(fmtS(activeGoal.limit_amount))}</div>
                  ${cycleStart && cycleEnd ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">${fmtDate(cycleStart)} – ${fmtDate(cycleEnd)}</div>` : ''}`
               : `<div style="font-size:13px;color:var(--muted)">Not set — tap to add your income cycle</div>`}
           </div>

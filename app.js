@@ -1377,8 +1377,19 @@ const MARKET_CRYPTOS = [
   { id: 'bitcoin',          sym: 'BTC', name: 'Bitcoin' },
   { id: 'ethereum',         sym: 'ETH', name: 'Ethereum' },
   { id: 'solana',           sym: 'SOL', name: 'Solana' },
+  { id: 'ripple',           sym: 'XRP', name: 'XRP' },
+  { id: 'binancecoin',      sym: 'BNB', name: 'BNB' },
+  { id: 'cardano',          sym: 'ADA', name: 'Cardano' },
+  { id: 'avalanche-2',      sym: 'AVAX', name: 'Avalanche' },
+  { id: 'matic-network',    sym: 'MATIC', name: 'Polygon' },
   { id: 'crypto-com-chain', sym: 'CRO', name: 'Cronos' },
 ];
+
+function fmtMarketCap(n) {
+  if (n >= 1e12) return '$' + (n / 1e12).toFixed(2) + 'T';
+  if (n >= 1e9)  return '$' + (n / 1e9).toFixed(1) + 'B';
+  return '$' + (n / 1e6).toFixed(0) + 'M';
+}
 
 async function loadMarkets() {
   hideFab();
@@ -1386,25 +1397,78 @@ async function loadMarkets() {
   el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
 
   const cryptoIds = MARKET_CRYPTOS.map(c => c.id).join(',');
-  let data = null;
-  try {
-    data = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${cryptoIds}&vs_currencies=usd&include_24hr_change=true`)
-      .then(r => r.json());
-  } catch (_) {}
+
+  const [pricesResult, globalResult, fngResult] = await Promise.allSettled([
+    fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${cryptoIds}&vs_currencies=usd&include_24hr_change=true`).then(r => r.json()),
+    fetch('https://api.coingecko.com/api/v3/global').then(r => r.json()),
+    fetch('https://api.alternative.me/fng/').then(r => r.json()),
+  ]);
+
+  const prices = pricesResult.status === 'fulfilled' ? pricesResult.value : null;
+  const global = globalResult.status  === 'fulfilled' ? globalResult.value?.data : null;
+  const fng    = fngResult.status     === 'fulfilled' ? fngResult.value?.data?.[0] : null;
 
   let html = `<div class="page-header">
     <span class="section-title">Markets</span>
     <button class="btn btn-sm btn-secondary" onclick="loadMarkets()">↻ Refresh</button>
-  </div>
-  <div class="card"><div class="card-title">Crypto</div>`;
+  </div>`;
 
-  if (data) {
+  // ── Market Overview ──
+  if (global) {
+    const mcap    = global.total_market_cap?.usd;
+    const mcapChg = global.market_cap_change_percentage_24h_usd;
+    const btcDom  = global.market_cap_percentage?.btc;
+    const chgColor = mcapChg >= 0 ? 'var(--green)' : 'var(--red)';
+    html += `<div class="card">
+      <div class="card-title">Market Overview</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:3px">Total Market Cap</div>
+          <div style="font-size:20px;font-weight:800">${mcap ? fmtMarketCap(mcap) : '—'}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:3px">24h Change</div>
+          <div style="font-size:16px;font-weight:700;color:${chgColor}">${mcapChg != null ? (mcapChg >= 0 ? '+' : '') + mcapChg.toFixed(2) + '%' : '—'}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="font-size:12px;color:var(--muted)">BTC Dominance</div>
+        <div style="font-size:13px;font-weight:700;color:var(--yellow)">${btcDom != null ? btcDom.toFixed(1) + '%' : '—'}</div>
+      </div>
+    </div>`;
+  }
+
+  // ── Fear & Greed ──
+  if (fng) {
+    const val   = parseInt(fng.value);
+    const label = fng.value_classification;
+    const fngColor = val <= 25 ? 'var(--red)' : val <= 45 ? 'var(--orange)' : val <= 55 ? 'var(--yellow)' : 'var(--green)';
+    const barPct = val;
+    html += `<div class="card">
+      <div class="card-title">Fear & Greed Index</div>
+      <div style="display:flex;align-items:center;gap:16px">
+        <div style="font-size:40px;font-weight:800;color:${fngColor};line-height:1">${val}</div>
+        <div>
+          <div style="font-size:16px;font-weight:700;color:${fngColor}">${label}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Crypto Sentiment</div>
+        </div>
+      </div>
+      <div style="margin-top:12px;background:linear-gradient(to right,#ef4444,#f97316,#f59e0b,#22c55e);border-radius:4px;height:6px;position:relative">
+        <div style="position:absolute;top:-4px;left:calc(${barPct}% - 6px);width:12px;height:12px;background:#fff;border-radius:50%;border:2px solid ${fngColor}"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px"><span>Fear</span><span>Greed</span></div>
+    </div>`;
+  }
+
+  // ── Crypto Prices ──
+  html += `<div class="card"><div class="card-title">Crypto</div>`;
+  if (prices) {
     MARKET_CRYPTOS.forEach(c => {
-      const info = data[c.id];
+      const info = prices[c.id];
       if (!info) return;
       const price  = info.usd;
       const change = info.usd_24h_change;
-      const priceStr   = price >= 1
+      const priceStr  = price >= 1
         ? '$' + price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
         : '$' + price.toFixed(4);
       const changeStr  = change != null ? (change >= 0 ? '+' : '') + change.toFixed(2) + '%' : '—';
@@ -1423,7 +1487,7 @@ async function loadMarkets() {
   } else {
     html += `<div style="color:var(--muted);font-size:13px;padding:8px 0">Prices unavailable — check your connection</div>`;
   }
-
   html += `</div>`;
+
   el.innerHTML = html;
 }

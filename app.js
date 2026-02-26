@@ -1276,3 +1276,101 @@ async function submitSetIncome(existingId) {
     loadDashboard();
   } catch (e) { showToast(e.message, 'error'); }
 }
+
+// ─── Markets ──────────────────────────────────────────────────────────────────
+
+const MARKET_CRYPTOS = [
+  { id: 'bitcoin',          sym: 'BTC', name: 'Bitcoin' },
+  { id: 'ethereum',         sym: 'ETH', name: 'Ethereum' },
+  { id: 'solana',           sym: 'SOL', name: 'Solana' },
+  { id: 'crypto-com-chain', sym: 'CRO', name: 'Cronos' },
+];
+
+const MARKET_STOCKS = ['AAPL','NVDA','TSLA','MSFT','AMZN','GOOGL','META'];
+const MARKET_STOCK_NAMES = {
+  AAPL: 'Apple', NVDA: 'NVIDIA', TSLA: 'Tesla', MSFT: 'Microsoft',
+  AMZN: 'Amazon', GOOGL: 'Alphabet', META: 'Meta',
+};
+
+async function loadMarkets() {
+  hideFab();
+  const el = document.getElementById('markets-content');
+  el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+
+  const cryptoIds = MARKET_CRYPTOS.map(c => c.id).join(',');
+  const stockSyms = MARKET_STOCKS.join(',');
+
+  const [cryptoResult, stockResult] = await Promise.allSettled([
+    fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${cryptoIds}&vs_currencies=usd&include_24hr_change=true`)
+      .then(r => r.json()),
+    fetch(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${stockSyms}&fields=regularMarketPrice,regularMarketChangePercent`)
+      .then(r => r.json()),
+  ]);
+
+  let html = `<div class="page-header">
+    <span class="section-title">Markets</span>
+    <button class="btn btn-sm btn-secondary" onclick="loadMarkets()">↻ Refresh</button>
+  </div>`;
+
+  // ── Crypto ──
+  html += `<div class="card"><div class="card-title">Crypto</div>`;
+  if (cryptoResult.status === 'fulfilled' && cryptoResult.value) {
+    const data = cryptoResult.value;
+    MARKET_CRYPTOS.forEach(c => {
+      const info = data[c.id];
+      if (!info) return;
+      const price  = info.usd;
+      const change = info.usd_24h_change;
+      const priceStr  = price >= 1
+        ? '$' + price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        : '$' + price.toFixed(4);
+      const changeStr  = change != null ? (change >= 0 ? '+' : '') + change.toFixed(2) + '%' : '—';
+      const changeColor = change != null && change >= 0 ? 'var(--green)' : 'var(--red)';
+      html += `<div class="list-item">
+        <div class="list-item-left">
+          <div class="list-item-title">${c.name}</div>
+          <div class="list-item-sub">${c.sym}</div>
+        </div>
+        <div class="list-item-right">
+          <div style="font-size:15px;font-weight:700">${priceStr}</div>
+          <div style="font-size:12px;color:${changeColor}">${changeStr}</div>
+        </div>
+      </div>`;
+    });
+  } else {
+    html += `<div style="color:var(--muted);font-size:13px;padding:8px 0">Crypto prices unavailable</div>`;
+  }
+  html += `</div>`;
+
+  // ── Stocks ──
+  html += `<div class="card"><div class="card-title">Stocks</div>`;
+  const quotes = stockResult.status === 'fulfilled'
+    ? stockResult.value?.quoteResponse?.result || []
+    : [];
+
+  if (quotes.length) {
+    quotes.forEach(q => {
+      const name      = MARKET_STOCK_NAMES[q.symbol] || q.symbol;
+      const price     = q.regularMarketPrice;
+      const change    = q.regularMarketChangePercent;
+      const priceStr  = price != null ? '$' + price.toFixed(2) : '—';
+      const changeStr  = change != null ? (change >= 0 ? '+' : '') + change.toFixed(2) + '%' : '—';
+      const changeColor = change != null && change >= 0 ? 'var(--green)' : 'var(--red)';
+      html += `<div class="list-item">
+        <div class="list-item-left">
+          <div class="list-item-title">${name}</div>
+          <div class="list-item-sub">${q.symbol}</div>
+        </div>
+        <div class="list-item-right">
+          <div style="font-size:15px;font-weight:700">${priceStr}</div>
+          <div style="font-size:12px;color:${changeColor}">${changeStr}</div>
+        </div>
+      </div>`;
+    });
+  } else {
+    html += `<div style="color:var(--muted);font-size:13px;padding:8px 0">Stock prices unavailable</div>`;
+  }
+  html += `</div>`;
+
+  el.innerHTML = html;
+}

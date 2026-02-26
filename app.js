@@ -1381,7 +1381,7 @@ const MARKET_CRYPTOS = [
   { sym: 'BNB',  name: 'BNB',       binance: 'BNBUSDT'  },
   { sym: 'ADA',  name: 'Cardano',   binance: 'ADAUSDT'  },
   { sym: 'AVAX', name: 'Avalanche', binance: 'AVAXUSDT' },
-  { sym: 'MATIC', name: 'Polygon',  binance: 'MATICUSDT'},
+  { sym: 'POL',  name: 'Polygon',   binance: 'POLUSDT'  },
   { sym: 'CRO',  name: 'Cronos',    binance: 'CROUSDT'  },
 ];
 

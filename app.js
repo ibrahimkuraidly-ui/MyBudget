@@ -1092,6 +1092,7 @@ async function deleteGoal(id) {
 // ─── Investments ──────────────────────────────────────────────────────────────
 
 let _investChart = null;
+let _marketsTimer = null;
 
 async function loadPortfolio() {
   hideFab();

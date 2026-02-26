@@ -412,7 +412,7 @@ async function loadTransactions() {
   el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {
     const [txns, allIncomeGoals] = await Promise.all([
-      api('GET', 'transactions', `user_id=eq.${currentUserId}&${monthRange(_txnMonth)}&type=eq.expense&category=neq.__card_payment__&select=*&order=date.desc,created_at.desc`),
+      api('GET', 'transactions', `user_id=eq.${currentUserId}&${monthRange(_activeMonth)}&type=eq.expense&category=neq.__card_payment__&select=*&order=date.desc,created_at.desc`),
       api('GET', 'budgets',      `user_id=eq.${currentUserId}&category=eq.__income_goal__&select=*&order=created_at.desc`),
     ]);
 
@@ -429,9 +429,9 @@ async function loadTransactions() {
 
     let html = `
       <div class="month-bar">
-        <button class="month-nav" onclick="_txnMonth=prevMonth(_txnMonth);loadTransactions()">&#8249;</button>
-        <span class="month-label">${monthLabel(_txnMonth)}</span>
-        <button class="month-nav" onclick="_txnMonth=nextMonth(_txnMonth);loadTransactions()">&#8250;</button>
+        <button class="month-nav" onclick="_activeMonth=prevMonth(_activeMonth);loadTransactions()">&#8249;</button>
+        <span class="month-label">${monthLabel(_activeMonth)}</span>
+        <button class="month-nav" onclick="_activeMonth=nextMonth(_activeMonth);loadTransactions()">&#8250;</button>
       </div>
       <div class="stat-row two" style="margin-bottom:12px">
         <div class="stat-card"><div class="stat-label">Spent</div><div class="stat-value red">${fmtS(totalSpent)}</div></div>

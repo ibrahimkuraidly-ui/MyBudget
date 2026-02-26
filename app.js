@@ -1572,31 +1572,67 @@ async function loadPicks() {
 
 async function fetchGeminiPicks(apiKey) {
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  // Gather live market data to pass as context
+  let marketContext = '';
+  try {
+    const [cpRes, fngRes, globalRes] = await Promise.allSettled([
+      fetchJSON('https://api.coinpaprika.com/v1/tickers?quotes=USD&limit=100'),
+      fetchJSON('https://api.alternative.me/fng/'),
+      fetchJSON('https://api.coinpaprika.com/v1/global'),
+    ]);
+    const tickers = cpRes.status === 'fulfilled' ? cpRes.value : [];
+    const fng     = fngRes.status === 'fulfilled' ? fngRes.value?.data?.[0] : null;
+    const global  = globalRes.status === 'fulfilled' ? globalRes.value : null;
+    const tm = {};
+    tickers.forEach(t => { tm[t.symbol] = t; });
+    const lines = [];
+    if (global) {
+      lines.push(`Total Crypto Market Cap: ${fmtMarketCap(global.market_cap_usd)}`);
+      lines.push(`BTC Dominance: ${global.bitcoin_dominance_percentage?.toFixed(1)}%`);
+    }
+    if (fng) lines.push(`Fear & Greed Index: ${fng.value} (${fng.value_classification})`);
+    lines.push('');
+    lines.push('Live Prices (24h change):');
+    MARKET_CRYPTOS.forEach(c => {
+      const t = tm[c.cpSym];
+      if (!t) return;
+      const p  = t.quotes?.USD?.price;
+      const ch = t.quotes?.USD?.percent_change_24h;
+      if (p == null) return;
+      const ps = p >= 1 ? '$' + p.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '$' + p.toFixed(4);
+      lines.push(`  ${c.name} (${c.sym}): ${ps} (${ch >= 0 ? '+' : ''}${ch?.toFixed(2)}%)`);
+    });
+    marketContext = lines.join('\n');
+  } catch (_) {}
+
   const prompt = `Today is ${today}. You are a sharp financial analyst giving daily investment suggestions.
 
-Use Google Search to find today's financial news, crypto market movements, economic events, and market sentiment. Based on what you find, give exactly 3 investment suggestions for today.
+Here is today's live market data:
+${marketContext || '(market data unavailable — use your general knowledge)'}
+
+Based on these market conditions, patterns, and your knowledge of macro trends, give exactly 3 investment suggestions for today. Cover a mix of asset types (crypto, stock, commodity/ETF) where relevant.
 
 Format each one exactly like this:
 
 🟢 BUY / 🟡 WATCH / 🔴 AVOID
 **Asset Name (TICKER)** — Type (Crypto / Stock / Commodity / ETF)
-2-3 sentences of reasoning tied to specific news or conditions from today.
+2-3 sentences of clear reasoning based on the data and market context above.
 
 ---
 
-Cover a mix of asset types where relevant. After the 3 picks, end with:
-**Market Mood:** one sentence on today's overall market sentiment.
+After the 3 picks, end with:
+**Market Mood:** one sentence on today's overall market sentiment based on the data.
 
 *Not financial advice. Always do your own research.*`;
 
   const resp = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        tools: [{ googleSearch: {} }],
         generationConfig: { temperature: 0.7, maxOutputTokens: 1200 }
       })
     }

@@ -301,6 +301,11 @@ async function loadDashboard() {
     const recentTxns = txns.slice(0, 5);
 
     let html = `
+      <div class="month-bar">
+        <button class="month-nav" onclick="_activeMonth=prevMonth(_activeMonth);loadDashboard()">&#8249;</button>
+        <span class="month-label">${monthLabel(_activeMonth)}</span>
+        <button class="month-nav" onclick="_activeMonth=nextMonth(_activeMonth);loadDashboard()">&#8250;</button>
+      </div>
       <div class="nw-banner">
         <div class="nw-label">Available to Spend</div>
         <div class="nw-value" style="color:${flexRemaining == null ? 'inherit' : flexRemaining >= 0 ? 'var(--green)' : 'var(--red)'}">
@@ -317,11 +322,6 @@ async function loadDashboard() {
           <div class="stat-label">Secure</div>
           <div class="stat-value ${secBalance > 0 ? 'red' : 'green'}">${fmt(secBalance)}</div>
         </div>
-      </div>
-      <div class="month-bar">
-        <button class="month-nav" onclick="_activeMonth=prevMonth(_activeMonth);loadDashboard()">&#8249;</button>
-        <span class="month-label">${monthLabel(_activeMonth)}</span>
-        <button class="month-nav" onclick="_activeMonth=nextMonth(_activeMonth);loadDashboard()">&#8250;</button>
       </div>
       <div class="stat-row two">
         <div class="stat-card"><div class="stat-label">Spent</div><div class="stat-value red">${fmtS(expenses)}</div></div>

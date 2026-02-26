@@ -230,7 +230,7 @@ function loadPage(tab) {
 
 // ─── Dashboard ───────────────────────────────────────────────────────────────
 
-let _dashMonth = currMonth();
+let _activeMonth = currMonth();
 
 async function loadDashboard() {
   showFab();

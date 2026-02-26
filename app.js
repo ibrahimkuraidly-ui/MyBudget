@@ -1374,15 +1374,15 @@ async function submitSetIncome(existingId) {
 // ─── Markets ──────────────────────────────────────────────────────────────────
 
 const MARKET_CRYPTOS = [
-  { sym: 'BTC',  name: 'Bitcoin',   binance: 'BTCUSDT'  },
-  { sym: 'ETH',  name: 'Ethereum',  binance: 'ETHUSDT'  },
-  { sym: 'SOL',  name: 'Solana',    binance: 'SOLUSDT'  },
-  { sym: 'XRP',  name: 'XRP',       binance: 'XRPUSDT'  },
-  { sym: 'BNB',  name: 'BNB',       binance: 'BNBUSDT'  },
-  { sym: 'ADA',  name: 'Cardano',   binance: 'ADAUSDT'  },
-  { sym: 'AVAX', name: 'Avalanche', binance: 'AVAXUSDT' },
-  { sym: 'POL',  name: 'Polygon',   binance: 'POLUSDT'  },
-  { sym: 'CRO',  name: 'Cronos',    binance: 'CROUSDT'  },
+  { sym: 'BTC',  name: 'Bitcoin',   cpSym: 'BTC'  },
+  { sym: 'ETH',  name: 'Ethereum',  cpSym: 'ETH'  },
+  { sym: 'SOL',  name: 'Solana',    cpSym: 'SOL'  },
+  { sym: 'XRP',  name: 'XRP',       cpSym: 'XRP'  },
+  { sym: 'BNB',  name: 'BNB',       cpSym: 'BNB'  },
+  { sym: 'ADA',  name: 'Cardano',   cpSym: 'ADA'  },
+  { sym: 'AVAX', name: 'Avalanche', cpSym: 'AVAX' },
+  { sym: 'POL',  name: 'Polygon',   cpSym: 'MATIC' }, // CoinPaprika still uses MATIC
+  { sym: 'CRO',  name: 'Cronos',    cpSym: 'CRO'  },
 ];
 
 function fmtMarketCap(n) {

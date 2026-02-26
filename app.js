@@ -447,35 +447,6 @@ function showFab() {
   fab.style.display = '';
 }
 
-// ─── Swipe Navigation ────────────────────────────────────────────────────────
-
-const FINANCE_TABS = ['dashboard', 'transactions', 'budget', 'savings'];
-const INVEST_TABS  = ['portfolio', 'markets'];
-
-let _swipeStartX = 0;
-let _swipeStartY = 0;
-
-document.addEventListener('touchstart', e => {
-  _swipeStartX = e.touches[0].clientX;
-  _swipeStartY = e.touches[0].clientY;
-}, { passive: true });
-
-document.addEventListener('touchend', e => {
-  const dx = e.changedTouches[0].clientX - _swipeStartX;
-  const dy = e.changedTouches[0].clientY - _swipeStartY;
-  // Require at least 60px horizontal and more horizontal than vertical
-  if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-  const tabs = _currentApp === 'invest' ? INVEST_TABS : FINANCE_TABS;
-  const activeTab = document.querySelector('.tab.active')?.dataset.tab;
-  const idx = tabs.indexOf(activeTab);
-  if (idx === -1) return;
-  const nextTab = dx < 0 ? tabs[idx + 1] : tabs[idx - 1];
-  if (!nextTab) return;
-  activateTab(nextTab);
-  const key = _currentApp === 'invest' ? 'helm-invest-tab' : 'helm-finance-tab';
-  localStorage.setItem(key, nextTab);
-}, { passive: true });
-
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 
 document.querySelectorAll('.tab[data-tab]').forEach(btn => {

@@ -1391,6 +1391,14 @@ function fmtMarketCap(n) {
   return '$' + (n / 1e6).toFixed(0) + 'M';
 }
 
+function fetchJSON(url, ms = 8000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { signal: ctrl.signal })
+    .then(r => { clearTimeout(t); if (!r.ok) throw new Error(r.status); return r.json(); })
+    .catch(e => { clearTimeout(t); throw e; });
+}
+
 async function loadMarkets() {
   hideFab();
   const el = document.getElementById('markets-content');
@@ -1398,15 +1406,18 @@ async function loadMarkets() {
 
   const cryptoIds = MARKET_CRYPTOS.map(c => c.id).join(',');
 
-  const [pricesResult, globalResult, fngResult] = await Promise.allSettled([
-    fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${cryptoIds}&vs_currencies=usd&include_24hr_change=true`).then(r => r.json()),
-    fetch('https://api.coingecko.com/api/v3/global').then(r => r.json()),
-    fetch('https://api.alternative.me/fng/').then(r => r.json()),
+  // Fetch global + FNG first, then prices (avoid hitting CoinGecko rate limit with 2 simultaneous requests)
+  const [globalResult, fngResult] = await Promise.allSettled([
+    fetchJSON('https://api.coingecko.com/api/v3/global'),
+    fetchJSON('https://api.alternative.me/fng/'),
+  ]);
+  const pricesResult = await Promise.allSettled([
+    fetchJSON(`https://api.coingecko.com/api/v3/simple/price?ids=${cryptoIds}&vs_currencies=usd&include_24hr_change=true`),
   ]);
 
-  const prices = pricesResult.status === 'fulfilled' ? pricesResult.value : null;
-  const global = globalResult.status  === 'fulfilled' ? globalResult.value?.data : null;
-  const fng    = fngResult.status     === 'fulfilled' ? fngResult.value?.data?.[0] : null;
+  const prices = pricesResult[0].status === 'fulfilled' ? pricesResult[0].value : null;
+  const global = globalResult.status    === 'fulfilled' ? globalResult.value?.data : null;
+  const fng    = fngResult.status       === 'fulfilled' ? fngResult.value?.data?.[0] : null;
 
   let html = `<div class="page-header">
     <span class="section-title">Markets</span>

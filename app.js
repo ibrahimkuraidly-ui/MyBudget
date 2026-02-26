@@ -1010,8 +1010,8 @@ async function loadSavings() {
             </div>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
-            <span style="color:var(--green);font-weight:700">${fmt(g.current_amount)}</span>
-            <span style="color:var(--muted)">of ${fmt(g.target_amount)}</span>
+            <span style="color:var(--green);font-weight:700">${privVal(fmt(g.current_amount))}</span>
+            <span style="color:var(--muted)">of ${privVal(fmt(g.target_amount))}</span>
           </div>
           <div class="progress-bar"><div class="progress-fill safe" style="width:${p}%"></div></div>
           <div style="text-align:right;font-size:12px;color:var(--muted);margin-top:4px">${p}% complete</div>

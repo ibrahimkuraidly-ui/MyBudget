@@ -152,11 +152,6 @@ function showApp() {
     ? (localStorage.getItem('helm-invest-tab')   || 'portfolio')
     : (localStorage.getItem('helm-finance-tab')  || 'dashboard');
   activateTab(savedTab);
-  // Sync Groq key from Supabase user metadata → localStorage
-  sb.auth.getUser().then(({ data: { user } }) => {
-    const cloudKey = user?.user_metadata?.groq_key;
-    if (cloudKey) localStorage.setItem('helm-groq-key', cloudKey);
-  }).catch(() => {});
 }
 
 function toggleAppSwitcher() {

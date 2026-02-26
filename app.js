@@ -1404,33 +1404,33 @@ async function loadMarkets() {
   const el = document.getElementById('markets-content');
   el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {
-    // CoinCap: one call gives prices + market caps for top 100 coins. No key, CORS-friendly.
-    const [assetsResult, fngResult] = await Promise.allSettled([
-      fetchJSON('https://api.coincap.io/v2/assets?limit=100'),
+    const binanceSymbols = JSON.stringify(MARKET_CRYPTOS.map(c => c.binance));
+    const [tickersResult, fngResult, coincapResult] = await Promise.allSettled([
+      fetchJSON(`https://api.binance.com/api/v3/ticker/24hr?symbols=${encodeURIComponent(binanceSymbols)}`),
       fetchJSON('https://api.alternative.me/fng/'),
+      fetchJSON('https://api.coincap.io/v2/assets?limit=20'),
     ]);
 
-    const assets = assetsResult.status === 'fulfilled' ? (assetsResult.value?.data || []) : [];
-    const fng    = fngResult.status    === 'fulfilled' ? fngResult.value?.data?.[0] : null;
-
-    // Market overview from top 100 assets
-    const totalMcap = assets.reduce((s, a) => s + parseFloat(a.marketCapUsd || 0), 0);
-    const btcAsset  = assets.find(a => a.symbol === 'BTC');
-    const btcDom    = btcAsset && totalMcap ? (parseFloat(btcAsset.marketCapUsd) / totalMcap * 100) : null;
+    const tickers = tickersResult.status === 'fulfilled' ? tickersResult.value : null;
+    const fng     = fngResult.status     === 'fulfilled' ? fngResult.value?.data?.[0] : null;
+    const caAssets = coincapResult.status === 'fulfilled' ? coincapResult.value?.data || [] : [];
 
     let html = `<div class="page-header">
       <span class="section-title">Markets</span>
       <button class="btn btn-sm btn-secondary" onclick="loadMarkets()">↻ Refresh</button>
     </div>`;
 
-    // ── Market Overview ──
-    if (assets.length) {
+    // ── Market Overview (from CoinCap — optional) ──
+    if (caAssets.length) {
+      const totalMcap = caAssets.reduce((s, a) => s + parseFloat(a.marketCapUsd || 0), 0);
+      const btcAsset  = caAssets.find(a => a.symbol === 'BTC');
+      const btcDom    = btcAsset && totalMcap ? (parseFloat(btcAsset.marketCapUsd) / totalMcap * 100) : null;
       html += `<div class="card">
         <div class="card-title">Market Overview</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
           <div>
             <div style="font-size:11px;color:var(--muted);margin-bottom:3px">Total Market Cap</div>
-            <div style="font-size:20px;font-weight:800">${totalMcap ? fmtMarketCap(totalMcap) : '—'}</div>
+            <div style="font-size:20px;font-weight:800">${fmtMarketCap(totalMcap)}</div>
           </div>
           <div style="text-align:right">
             <div style="font-size:11px;color:var(--muted);margin-bottom:3px">BTC Dominance</div>
@@ -1461,14 +1461,14 @@ async function loadMarkets() {
       </div>`;
     }
 
-    // ── Crypto Prices ──
+    // ── Crypto Prices (from Binance) ──
     html += `<div class="card"><div class="card-title">Crypto</div>`;
-    if (assets.length) {
+    if (tickers && tickers.length) {
       MARKET_CRYPTOS.forEach(c => {
-        const a = assets.find(x => x.symbol === c.sym);
-        if (!a) return;
-        const price  = parseFloat(a.priceUsd);
-        const change = parseFloat(a.changePercent24Hr);
+        const t = tickers.find(x => x.symbol === c.binance);
+        if (!t) return;
+        const price  = parseFloat(t.lastPrice);
+        const change = parseFloat(t.priceChangePercent);
         const priceStr  = price >= 1
           ? '$' + price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
           : '$' + price.toFixed(4);
@@ -1486,7 +1486,7 @@ async function loadMarkets() {
         </div>`;
       });
     } else {
-      html += `<div style="color:var(--muted);font-size:13px;padding:8px 0">Prices unavailable — check your connection</div>`;
+      html += `<div style="color:var(--muted);font-size:13px;padding:8px 0">Prices unavailable — tap refresh</div>`;
     }
     html += `</div>`;
 

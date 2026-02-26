@@ -630,7 +630,7 @@ async function loadDashboard() {
         html += `<div style="margin-bottom:10px">
           <div style="display:flex;justify-content:space-between;margin-bottom:4px">
             <span style="font-size:13px;color:var(--text)">${g.name}</span>
-            <span style="font-size:12px;color:var(--muted)">${fmtS(g.current_amount)} / ${fmtS(g.target_amount)}</span>
+            <span style="font-size:12px;color:var(--muted)">${privVal(fmtS(g.current_amount))} / ${privVal(fmtS(g.target_amount))}</span>
           </div>
           <div class="progress-bar"><div class="progress-fill safe" style="width:${p}%"></div></div>
         </div>`;

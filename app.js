@@ -1,4 +1,4 @@
-// MyBudget — Personal Finance PWA
+// Helm — Personal Finance PWA
 const SUPABASE_URL = 'https://ulrdmnzeoswlzuyxxzbx.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_yWV0O6uMKoc7E3BHmKPmiw_dIqDsN21';
 

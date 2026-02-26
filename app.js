@@ -1374,15 +1374,15 @@ async function submitSetIncome(existingId) {
 // ─── Markets ──────────────────────────────────────────────────────────────────
 
 const MARKET_CRYPTOS = [
-  { id: 'bitcoin',          sym: 'BTC', name: 'Bitcoin' },
-  { id: 'ethereum',         sym: 'ETH', name: 'Ethereum' },
-  { id: 'solana',           sym: 'SOL', name: 'Solana' },
-  { id: 'ripple',           sym: 'XRP', name: 'XRP' },
-  { id: 'binancecoin',      sym: 'BNB', name: 'BNB' },
-  { id: 'cardano',          sym: 'ADA', name: 'Cardano' },
-  { id: 'avalanche-2',      sym: 'AVAX', name: 'Avalanche' },
-  { id: 'matic-network',    sym: 'MATIC', name: 'Polygon' },
-  { id: 'crypto-com-chain', sym: 'CRO', name: 'Cronos' },
+  { sym: 'BTC',  name: 'Bitcoin' },
+  { sym: 'ETH',  name: 'Ethereum' },
+  { sym: 'SOL',  name: 'Solana' },
+  { sym: 'XRP',  name: 'XRP' },
+  { sym: 'BNB',  name: 'BNB' },
+  { sym: 'ADA',  name: 'Cardano' },
+  { sym: 'AVAX', name: 'Avalanche' },
+  { sym: 'MATIC', name: 'Polygon' },
+  { sym: 'CRO',  name: 'Cronos' },
 ];
 
 function fmtMarketCap(n) {

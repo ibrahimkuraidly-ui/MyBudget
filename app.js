@@ -357,8 +357,14 @@ function showFab() {
 
 document.querySelectorAll('.tab[data-tab]').forEach(btn => {
   btn.addEventListener('click', () => {
-    activateTab(btn.dataset.tab);
-    localStorage.setItem('mybudget-tab', btn.dataset.tab);
+    const tab = btn.dataset.tab;
+    activateTab(tab);
+    localStorage.setItem('mybudget-tab', tab);
+    if (['dashboard','transactions','budget','savings'].includes(tab)) {
+      localStorage.setItem('helm-finance-tab', tab);
+    } else {
+      localStorage.setItem('helm-invest-tab', tab);
+    }
   });
 });
 

@@ -694,8 +694,8 @@ async function loadTransactions() {
     let html = `
       <div class="month-bar"><span class="month-label">${monthLabel(_activeMonth)}</span></div>
       <div class="stat-row two" style="margin-bottom:12px">
-        <div class="stat-card"><div class="stat-label">Spent</div><div class="stat-value red">${fmtS(totalSpent)}</div></div>
-        <div class="stat-card"><div class="stat-label">Remaining</div><div class="stat-value ${remaining != null && remaining >= 0 ? 'green' : 'red'}">${remaining != null ? fmtS(remaining) : '—'}</div></div>
+        <div class="stat-card"><div class="stat-label">Spent</div><div class="stat-value red">${privVal(fmtS(totalSpent))}</div></div>
+        <div class="stat-card"><div class="stat-label">Remaining</div><div class="stat-value ${remaining != null && remaining >= 0 ? 'green' : 'red'}">${remaining != null ? privVal(fmtS(remaining)) : '—'}</div></div>
       </div>`;
 
     if (txns.length) {

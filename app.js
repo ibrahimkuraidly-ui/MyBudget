@@ -53,6 +53,9 @@ function showApp() {
   _currentApp = savedApp;
   document.getElementById('tab-bar-finance').style.display = savedApp === 'finance' ? '' : 'none';
   document.getElementById('tab-bar-invest').style.display = savedApp === 'invest' ? '' : 'none';
+  // Force correct icon-only content (guards against stale cached HTML)
+  document.getElementById('opt-finance').innerHTML = '$';
+  document.getElementById('opt-invest').innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>`;
   document.getElementById('opt-finance').classList.toggle('active', savedApp === 'finance');
   document.getElementById('opt-invest').classList.toggle('active', savedApp === 'invest');
   const savedTab = localStorage.getItem('mybudget-tab') || 'dashboard';

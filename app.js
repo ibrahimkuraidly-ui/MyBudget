@@ -1396,7 +1396,7 @@ function fmtMarketCap(n) {
 function fetchJSON(url, ms = 8000) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), ms);
-  return fetch(url, { signal: ctrl.signal })
+  return fetch(url, { signal: ctrl.signal, cache: 'no-store' })
     .then(r => { clearTimeout(t); if (!r.ok) throw new Error(r.status); return r.json(); })
     .catch(e => { clearTimeout(t); throw e; });
 }

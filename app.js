@@ -1626,39 +1626,38 @@ After the 3 picks, end with:
 
 *Not financial advice. Always do your own research.*`;
 
-  // Auto-detect available model from the key's account
-  const modelsResp = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
-  );
-  if (!modelsResp.ok) throw new Error('Invalid API key or API not enabled.');
-  const modelsData = await modelsResp.json();
-  const available = (modelsData.models || [])
-    .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
-    .map(m => m.name.replace('models/', ''));
-  // Prefer flash/lite models (likely free), deprioritize pro/ultra
-  const preferred = available.sort((a, b) => {
-    const score = s => s.includes('lite') ? 0 : s.includes('flash') ? 1 : s.includes('pro') ? 2 : 3;
-    return score(a) - score(b);
-  });
-  if (!preferred.length) throw new Error('No usable Gemini models found for this API key.');
-  const model = preferred[0];
-
-  const resp = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 1200 }
-      })
-    }
-  );
-
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    throw new Error(err.error?.message || `Gemini API error ${resp.status}`);
+  // Try models in order — stops at first success
+  const MODELS = [
+    'gemini-2.0-flash-lite',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
+    'gemini-1.5-flash-8b',
+    'gemini-1.5-pro',
+  ];
+  let resp = null, lastErr = 'No Gemini model available for this API key.';
+  for (const model of MODELS) {
+    let r;
+    try {
+      r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 1200 }
+          })
+        }
+      );
+    } catch (e) { lastErr = e.message; continue; }
+    if (r.ok) { resp = r; break; }
+    const errData = await r.json().catch(() => ({}));
+    const msg = errData.error?.message || '';
+    // If model not found, try the next one. Any other error (quota, auth) — stop.
+    if (msg.toLowerCase().includes('not found')) { lastErr = msg; continue; }
+    throw new Error(msg || `Gemini error ${r.status}`);
   }
+  if (!resp) throw new Error(lastErr);
   const data = await resp.json();
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) throw new Error('No response from Gemini — check your API key.');

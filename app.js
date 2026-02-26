@@ -1626,29 +1626,34 @@ After the 3 picks, end with:
 
 *Not financial advice. Always do your own research.*`;
 
-  // Try models in order until one works
-  const models = ['gemini-2.0-flash-lite', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
-  let resp, lastErr;
-  for (const model of models) {
-    try {
-      resp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.7, maxOutputTokens: 1200 }
-          })
-        }
-      );
-      if (resp.ok) break;
-      const errData = await resp.json().catch(() => ({}));
-      lastErr = errData.error?.message || `API error ${resp.status}`;
-      resp = null;
-    } catch (e) { lastErr = e.message; resp = null; }
-  }
-  if (!resp) throw new Error(lastErr || 'All Gemini models unavailable');
+  // Auto-detect available model from the key's account
+  const modelsResp = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
+  );
+  if (!modelsResp.ok) throw new Error('Invalid API key or API not enabled.');
+  const modelsData = await modelsResp.json();
+  const available = (modelsData.models || [])
+    .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
+    .map(m => m.name.replace('models/', ''));
+  // Prefer flash/lite models (likely free), deprioritize pro/ultra
+  const preferred = available.sort((a, b) => {
+    const score = s => s.includes('lite') ? 0 : s.includes('flash') ? 1 : s.includes('pro') ? 2 : 3;
+    return score(a) - score(b);
+  });
+  if (!preferred.length) throw new Error('No usable Gemini models found for this API key.');
+  const model = preferred[0];
+
+  const resp = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 1200 }
+      })
+    }
+  );
 
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({}));

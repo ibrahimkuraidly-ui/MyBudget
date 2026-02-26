@@ -428,11 +428,7 @@ async function loadTransactions() {
     const remaining     = incomeGoalAmt != null ? incomeGoalAmt - totalSpent : null;
 
     let html = `
-      <div class="month-bar">
-        <button class="month-nav" onclick="_activeMonth=prevMonth(_activeMonth);loadTransactions()">&#8249;</button>
-        <span class="month-label">${monthLabel(_activeMonth)}</span>
-        <button class="month-nav" onclick="_activeMonth=nextMonth(_activeMonth);loadTransactions()">&#8250;</button>
-      </div>
+      <div class="month-bar"><span class="month-label">${monthLabel(_activeMonth)}</span></div>
       <div class="stat-row two" style="margin-bottom:12px">
         <div class="stat-card"><div class="stat-label">Spent</div><div class="stat-value red">${fmtS(totalSpent)}</div></div>
         <div class="stat-card"><div class="stat-label">Remaining</div><div class="stat-value ${remaining != null && remaining >= 0 ? 'green' : 'red'}">${remaining != null ? fmtS(remaining) : '—'}</div></div>

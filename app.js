@@ -902,8 +902,8 @@ async function loadBudget() {
             <button class="btn btn-sm btn-secondary" onclick="openEditBudget('${b.id}','${b.category}',${budget})">Edit</button>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:${budget > 0 ? '6px' : '0'}">
-            <span style="color:${spent > 0 ? 'var(--red)' : 'var(--muted)'}">Spent: ${fmt(spent)}</span>
-            <span style="color:var(--muted)">${budget > 0 ? 'Budget: ' + fmt(budget) : 'No budget set'}</span>
+            <span style="color:${spent > 0 ? 'var(--red)' : 'var(--muted)'}">Spent: ${privVal(fmt(spent))}</span>
+            <span style="color:var(--muted)">${budget > 0 ? 'Budget: ' + privVal(fmt(budget)) : 'No budget set'}</span>
           </div>
           ${budget > 0 ? `
           <div class="progress-bar"><div class="progress-fill ${p >= 100 ? 'over' : p >= 80 ? 'warn' : 'safe'}" style="width:${p}%"></div></div>

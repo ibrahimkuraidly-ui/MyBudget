@@ -384,7 +384,8 @@ function loadPage(tab) {
     case 'transactions': loadTransactions(); break;
     case 'budget':       loadBudget();       break;
     case 'savings':      loadSavings();      break;
-    case 'investments':  loadInvestments();  break;
+    case 'portfolio':    loadPortfolio();    break;
+    case 'markets':      loadMarkets();      break;
   }
 }
 

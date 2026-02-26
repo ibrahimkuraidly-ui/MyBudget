@@ -182,6 +182,123 @@ function showToast(msg, type = 'info') {
 
 function closeModal() { document.getElementById('modal-root').innerHTML = ''; }
 
+// ─── Claude AI ────────────────────────────────────────────────────────────────
+
+function getClaudeKey() { return localStorage.getItem('mybudget-claude-key'); }
+
+function openSetClaudeKey() {
+  document.getElementById('modal-root').innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-title">Claude API Key</div>
+        <div class="field">
+          <label>Anthropic API Key</label>
+          <input type="password" id="claude-key-input" placeholder="sk-ant-..." value="${getClaudeKey() || ''}">
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="saveClaudeKey()">Save</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function saveClaudeKey() {
+  const key = document.getElementById('claude-key-input').value.trim();
+  if (!key) { showToast('Enter a valid key', 'error'); return; }
+  localStorage.setItem('mybudget-claude-key', key);
+  closeModal();
+  showToast('API key saved', 'success');
+  loadDashboard();
+}
+
+async function callClaude(system, user) {
+  const key = getClaudeKey();
+  if (!key) { openSetClaudeKey(); throw new Error('Set your Claude API key first'); }
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-allow-browser': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 512,
+      system,
+      messages: [{ role: 'user', content: user }],
+    }),
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error?.message || `Claude API error ${resp.status}`);
+  }
+  const data = await resp.json();
+  return data.content[0].text.trim();
+}
+
+let _catDebounce;
+function debounceCat(val) {
+  clearTimeout(_catDebounce);
+  const hint = document.getElementById('cat-hint');
+  if (!val || val.trim().length < 3 || !getClaudeKey()) return;
+  if (hint) hint.textContent = '…';
+  _catDebounce = setTimeout(async () => {
+    try {
+      const cats = ['Normal Spending', ...BUDGET_ITEMS, 'Other'];
+      const suggestion = await callClaude(
+        'You are a budget categorizer. Given a transaction description, return ONLY the single best matching category name from the list. Return nothing else — no punctuation, no explanation.',
+        `Description: "${val.trim()}"\nCategories: ${cats.join(', ')}`
+      );
+      const matched = cats.find(c => c.toLowerCase() === suggestion.toLowerCase());
+      if (matched) {
+        const sel = document.getElementById('t-cat');
+        if (sel) sel.value = matched;
+        if (hint) hint.textContent = `→ ${matched}`;
+      } else if (hint) hint.textContent = '';
+    } catch (_) { if (hint) hint.textContent = ''; }
+  }, 700);
+}
+
+let _dashData = null;
+
+async function generateInsights() {
+  const el = document.getElementById('insights-content');
+  const btn = document.getElementById('insights-btn');
+  if (!el) return;
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+  el.innerHTML = '<div style="color:var(--muted);font-size:13px">Analyzing your budget…</div>';
+  try {
+    const d = _dashData;
+    if (!d) throw new Error('Load the dashboard first');
+    const cats = [...BUDGET_ITEMS, 'Normal Spending'];
+    const lines = cats.map(cat => {
+      const spent = d.byCat[cat] || 0;
+      const budget = cat === 'Normal Spending' ? d.nsBudget : (d.budgetMap[cat] || 0);
+      return `${cat}: spent $${spent.toFixed(2)} of $${(budget||0).toFixed(2)} budget`;
+    });
+    const prompt = `Month: ${monthLabel(d.month)}
+Income: $${(d.incomeGoalAmt||0).toFixed(2)}
+Total spent: $${d.expenses.toFixed(2)}
+Flexible budget remaining (Normal Spending + Groceries + Sara Allowance): $${(d.flexRemaining||0).toFixed(2)}
+Capital One balance: $${d.coBalance.toFixed(2)} / $7000 limit (${(d.coBalance/70).toFixed(0)}% utilization)
+Secure balance: $${d.secBalance.toFixed(2)} / $1000 limit (${(d.secBalance/10).toFixed(0)}% utilization)
+
+Spending by category:
+${lines.join('\n')}`;
+
+    const insights = await callClaude(
+      'You are a personal finance advisor. Given a monthly budget summary, provide 3-4 short, practical insights. Be direct and specific. Use plain text, no markdown.',
+      prompt
+    );
+    el.innerHTML = `<div style="font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap">${insights}</div>`;
+  } catch (e) {
+    el.innerHTML = `<div style="font-size:13px;color:var(--muted)">${e.message}</div>`;
+  }
+  if (btn) { btn.disabled = false; btn.textContent = 'Generate'; }
+}
+
 function hideFab() {
   const fab = document.getElementById('txn-fab');
   if (fab) fab.style.display = 'none';

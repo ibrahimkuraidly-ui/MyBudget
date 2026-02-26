@@ -1403,7 +1403,7 @@ async function loadMarkets() {
   hideFab();
   const el = document.getElementById('markets-content');
   el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
-
+  try {
   const cryptoIds = MARKET_CRYPTOS.map(c => c.id).join(',');
 
   // Fetch global + FNG first, then prices (avoid hitting CoinGecko rate limit with 2 simultaneous requests)

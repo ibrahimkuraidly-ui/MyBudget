@@ -562,7 +562,7 @@ async function loadDashboard() {
       <div class="nw-banner">
         <div class="nw-label">Available to Spend</div>
         <div class="nw-value" style="color:${flexRemaining == null ? 'inherit' : flexRemaining >= 0 ? 'var(--green)' : 'var(--red)'}">
-          ${flexRemaining != null ? (flexRemaining < 0 ? '-' : '') + fmtS(Math.abs(flexRemaining)) : '—'}
+          ${_privacyMode ? '••••' : flexRemaining != null ? (flexRemaining < 0 ? '-' : '') + fmtS(Math.abs(flexRemaining)) : '—'}
         </div>
         <div style="font-size:11px;color:var(--muted);margin-top:4px">Normal Spending · Groceries · Sara Allowance</div>
       </div>

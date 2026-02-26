@@ -594,12 +594,7 @@ async function loadBudget() {
     const nsSpent  = spentMap['Normal Spending'] || 0;
     const nsBudget = normalSpending;
 
-    let html = `
-      <div class="month-bar">
-        <button class="month-nav" onclick="_activeMonth=prevMonth(_activeMonth);loadBudget()">&#8249;</button>
-        <span class="month-label">${monthLabel(_activeMonth)}</span>
-        <button class="month-nav" onclick="_activeMonth=nextMonth(_activeMonth);loadBudget()">&#8250;</button>
-      </div>`;
+    let html = `<div class="month-bar"><span class="month-label">${monthLabel(_activeMonth)}</span></div>`;
 
     // Normal Spending card — always first
     if (nsBudget !== null) {

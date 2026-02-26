@@ -1508,3 +1508,149 @@ async function loadMarkets() {
   clearTimeout(_marketsTimer);
   _marketsTimer = setTimeout(loadMarkets, 300000); // CoinPaprika updates every 5 min
 }
+
+// ─── Daily Picks ──────────────────────────────────────────────────────────────
+
+const GEMINI_PICKS_KEY = 'helm-picks-v1';
+
+async function loadPicks() {
+  hideFab();
+  const el = document.getElementById('picks-content');
+  const apiKey = localStorage.getItem('helm-gemini-key');
+
+  if (!apiKey) {
+    el.innerHTML = `
+      <div class="page-header"><span class="section-title">Daily Picks</span></div>
+      <div class="card">
+        <div class="card-title">One-time Setup</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:16px">
+          Daily Picks uses Google Gemini AI with live web search to research today's market news and trends, then suggests what to watch or buy today.<br><br>
+          Get a <strong style="color:var(--text)">free API key</strong> from <strong style="color:var(--accent)">aistudio.google.com</strong> — no credit card needed.
+        </div>
+        <div class="field">
+          <label>Gemini API Key</label>
+          <input type="password" id="gemini-key-input" placeholder="AIza..." autocomplete="off">
+        </div>
+        <button class="btn btn-primary" style="width:100%;padding:13px" onclick="saveGeminiKey()">Save & Generate Today's Picks</button>
+      </div>`;
+    return;
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const cache = JSON.parse(localStorage.getItem(GEMINI_PICKS_KEY) || 'null');
+  if (cache && cache.date === today && cache.text) {
+    renderPicks(el, cache.text, cache.time, true);
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="page-header"><span class="section-title">Daily Picks</span></div>
+    <div class="card" style="text-align:center;padding:36px 20px">
+      <div class="spinner" style="margin:0 auto 16px"></div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:6px">Researching today's market...</div>
+      <div style="font-size:12px;color:var(--muted)">Gemini is scanning live news &amp; trends</div>
+    </div>`;
+
+  try {
+    const text = await fetchGeminiPicks(apiKey);
+    const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    localStorage.setItem(GEMINI_PICKS_KEY, JSON.stringify({ date: today, text, time }));
+    renderPicks(el, text, time, false);
+  } catch (e) {
+    el.innerHTML = `
+      <div class="page-header">
+        <span class="section-title">Daily Picks</span>
+        <button class="btn btn-sm btn-danger" onclick="clearGeminiKey()">Reset Key</button>
+      </div>
+      <div class="empty-state">
+        <div class="empty-state-icon">⚠️</div>
+        <div class="empty-state-text" style="color:var(--red)">${e.message || 'Failed to load picks'}</div>
+        <button class="btn btn-secondary btn-sm" style="margin-top:16px" onclick="loadPicks()">Try Again</button>
+      </div>`;
+  }
+}
+
+async function fetchGeminiPicks(apiKey) {
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const prompt = `Today is ${today}. You are a sharp financial analyst giving daily investment suggestions.
+
+Use Google Search to find today's financial news, crypto market movements, economic events, and market sentiment. Based on what you find, give exactly 3 investment suggestions for today.
+
+Format each one exactly like this:
+
+🟢 BUY / 🟡 WATCH / 🔴 AVOID
+**Asset Name (TICKER)** — Type (Crypto / Stock / Commodity / ETF)
+2-3 sentences of reasoning tied to specific news or conditions from today.
+
+---
+
+Cover a mix of asset types where relevant. After the 3 picks, end with:
+**Market Mood:** one sentence on today's overall market sentiment.
+
+*Not financial advice. Always do your own research.*`;
+
+  const resp = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        tools: [{ google_search_retrieval: {} }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 1200 }
+      })
+    }
+  );
+
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error?.message || `Gemini API error ${resp.status}`);
+  }
+  const data = await resp.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error('No response from Gemini — check your API key.');
+  return text;
+}
+
+function renderPicks(el, text, time, fromCache) {
+  const safe = text
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/🟢/g, '<span style="color:var(--green);font-size:16px">🟢</span>')
+    .replace(/🟡/g, '<span style="color:var(--yellow);font-size:16px">🟡</span>')
+    .replace(/🔴/g, '<span style="color:var(--red);font-size:16px">🔴</span>')
+    .replace(/^---$/gm, '<div style="border-top:1px solid var(--border);margin:14px 0"></div>')
+    .replace(/\n/g, '<br>');
+
+  el.innerHTML = `
+    <div class="page-header">
+      <span class="section-title">Daily Picks</span>
+      <button class="btn btn-sm btn-secondary" onclick="forceRefreshPicks()">↻ Refresh</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);text-align:right;margin-bottom:10px">
+      ${fromCache ? 'Cached · ' : '✨ Fresh · '}Generated ${time} · Refreshes daily
+    </div>
+    <div class="card" style="font-size:13px;line-height:1.85;color:var(--text)">${safe}</div>
+    <div style="text-align:right;margin-top:10px">
+      <button class="btn btn-sm btn-secondary" style="font-size:11px;color:var(--muted)" onclick="clearGeminiKey()">🔑 Change API Key</button>
+    </div>`;
+}
+
+function saveGeminiKey() {
+  const key = document.getElementById('gemini-key-input')?.value.trim();
+  if (!key) { showToast('Enter your API key', 'error'); return; }
+  localStorage.setItem('helm-gemini-key', key);
+  loadPicks();
+}
+
+function clearGeminiKey() {
+  localStorage.removeItem('helm-gemini-key');
+  localStorage.removeItem(GEMINI_PICKS_KEY);
+  loadPicks();
+}
+
+function forceRefreshPicks() {
+  localStorage.removeItem(GEMINI_PICKS_KEY);
+  loadPicks();
+}

@@ -1156,7 +1156,7 @@ async function loadPortfolio() {
               <div style="font-size:11px;color:var(--muted);margin-top:2px">Updated ${lastDate}</div>
             </div>
             <div style="text-align:right">
-              <div style="font-size:22px;font-weight:800;color:var(--green)">${balance != null ? fmtS(balance) : '—'}</div>
+              <div style="font-size:22px;font-weight:800;color:var(--green)">${balance != null ? privVal(fmtS(balance)) : '—'}</div>
               <div style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">
                 <button class="btn btn-sm btn-primary" onclick="openLogBalance('${a.id}','${a.name}')">Log Balance</button>
                 <button class="btn btn-sm btn-danger" onclick="deleteAccount('${a.id}')">✕</button>

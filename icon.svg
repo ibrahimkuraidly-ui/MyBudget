@@ -1,10 +1,35 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Dark background -->
+  <!-- Dark rounded square background -->
   <rect width="512" height="512" rx="110" fill="#0f1117"/>
-  <!-- White block -->
-  <rect x="108" y="108" width="296" height="296" rx="66" fill="#f1f5f9"/>
-  <!-- Dollar sign text, centered in badge -->
-  <text x="256" y="330"
-        font-family="sans-serif" font-weight="bold" font-size="200"
-        fill="#0f1117" text-anchor="middle">$</text>
+  <!-- Light circular badge -->
+  <circle cx="256" cy="256" r="180" fill="#f1f5f9"/>
+
+  <!-- Ship's helm wheel -->
+  <!-- Outer ring -->
+  <circle cx="256" cy="256" r="118" fill="none" stroke="#0f1117" stroke-width="16"/>
+
+  <!-- 8 spokes -->
+  <line x1="256" y1="256" x2="374" y2="256" stroke="#0f1117" stroke-width="11" stroke-linecap="round"/>
+  <line x1="256" y1="256" x2="339" y2="173" stroke="#0f1117" stroke-width="11" stroke-linecap="round"/>
+  <line x1="256" y1="256" x2="256" y2="138" stroke="#0f1117" stroke-width="11" stroke-linecap="round"/>
+  <line x1="256" y1="256" x2="173" y2="173" stroke="#0f1117" stroke-width="11" stroke-linecap="round"/>
+  <line x1="256" y1="256" x2="138" y2="256" stroke="#0f1117" stroke-width="11" stroke-linecap="round"/>
+  <line x1="256" y1="256" x2="173" y2="339" stroke="#0f1117" stroke-width="11" stroke-linecap="round"/>
+  <line x1="256" y1="256" x2="256" y2="374" stroke="#0f1117" stroke-width="11" stroke-linecap="round"/>
+  <line x1="256" y1="256" x2="339" y2="339" stroke="#0f1117" stroke-width="11" stroke-linecap="round"/>
+
+  <!-- Handle knobs on outer ring -->
+  <circle cx="374" cy="256" r="13" fill="#0f1117"/>
+  <circle cx="339" cy="173" r="13" fill="#0f1117"/>
+  <circle cx="256" cy="138" r="13" fill="#0f1117"/>
+  <circle cx="173" cy="173" r="13" fill="#0f1117"/>
+  <circle cx="138" cy="256" r="13" fill="#0f1117"/>
+  <circle cx="173" cy="339" r="13" fill="#0f1117"/>
+  <circle cx="256" cy="374" r="13" fill="#0f1117"/>
+  <circle cx="339" cy="339" r="13" fill="#0f1117"/>
+
+  <!-- Center hub -->
+  <circle cx="256" cy="256" r="32" fill="#0f1117"/>
+  <!-- Center hub hole -->
+  <circle cx="256" cy="256" r="16" fill="#f1f5f9"/>
 </svg>

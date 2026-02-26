@@ -628,9 +628,18 @@ async function submitTxn() {
   const description = JSON.stringify({ d, pm });
   try {
     await api('POST', 'transactions', '', { user_id: currentUserId, type: 'expense', amount, category, date, description });
+    // Save to correction history if user overrode the suggestion, or picked manually with no suggestion
+    if (d) {
+      const key = normalizeDesc(d);
+      const shouldSave = (_autoSuggestedCat && category !== _autoSuggestedCat) ||
+                         (!_autoSuggestedCat && category !== 'Normal Spending');
+      if (shouldSave) {
+        api('POST', 'category_corrections', '', { user_id: currentUserId, description_key: key, category }).catch(() => {});
+      }
+    }
     closeModal();
     showToast('Expense added', 'success');
-    loadTransactions();
+    loadDashboard();
   } catch (e) { showToast(e.message, 'error'); }
 }
 

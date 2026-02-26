@@ -1687,11 +1687,13 @@ function renderPicks(el, text, time, fromCache) {
     </div>`;
 }
 
-function saveGroqKey() {
+async function saveGroqKey() {
   const key = document.getElementById('groq-key-input')?.value.trim();
   if (!key) { showToast('Enter your API key', 'error'); return; }
   localStorage.setItem('helm-groq-key', key);
-  sb.auth.updateUser({ data: { groq_key: key } }).catch(() => {});
+  const { error } = await sb.auth.updateUser({ data: { groq_key: key } });
+  if (error) showToast('Saved locally (cloud sync failed: ' + error.message + ')', 'info');
+  else showToast('Key saved & synced to all devices ✓', 'success');
   loadPicks();
 }
 

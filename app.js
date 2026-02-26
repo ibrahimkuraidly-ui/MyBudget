@@ -559,9 +559,9 @@ async function loadBudget() {
   el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {
     const [budgets, allIncomeGoals, transactions] = await Promise.all([
-      api('GET', 'budgets',      `user_id=eq.${currentUserId}&month=eq.${_budgetMonth}&category=neq.__income_goal__&select=*`),
+      api('GET', 'budgets',      `user_id=eq.${currentUserId}&month=eq.${_activeMonth}&category=neq.__income_goal__&select=*`),
       api('GET', 'budgets',      `user_id=eq.${currentUserId}&category=eq.__income_goal__&select=*&order=created_at.desc`),
-      api('GET', 'transactions', `user_id=eq.${currentUserId}&${monthRange(_budgetMonth)}&type=eq.expense&category=neq.__card_payment__&select=amount,category`),
+      api('GET', 'transactions', `user_id=eq.${currentUserId}&${monthRange(_activeMonth)}&type=eq.expense&category=neq.__card_payment__&select=amount,category`),
     ]);
 
     // Ensure all 9 items exist for this month — create any missing ones at $0
@@ -569,7 +569,7 @@ async function loadBudget() {
     const missing = BUDGET_ITEMS.filter(cat => !existingCats.has(cat));
     if (missing.length > 0) {
       await Promise.all(missing.map(cat =>
-        api('POST', 'budgets', '', { user_id: currentUserId, month: _budgetMonth, category: cat, limit_amount: 0 })
+        api('POST', 'budgets', '', { user_id: currentUserId, month: _activeMonth, category: cat, limit_amount: 0 })
       ));
       return loadBudget();
     }
@@ -600,9 +600,9 @@ async function loadBudget() {
 
     let html = `
       <div class="month-bar">
-        <button class="month-nav" onclick="_budgetMonth=prevMonth(_budgetMonth);loadBudget()">&#8249;</button>
-        <span class="month-label">${monthLabel(_budgetMonth)}</span>
-        <button class="month-nav" onclick="_budgetMonth=nextMonth(_budgetMonth);loadBudget()">&#8250;</button>
+        <button class="month-nav" onclick="_activeMonth=prevMonth(_activeMonth);loadBudget()">&#8249;</button>
+        <span class="month-label">${monthLabel(_activeMonth)}</span>
+        <button class="month-nav" onclick="_activeMonth=nextMonth(_activeMonth);loadBudget()">&#8250;</button>
       </div>`;
 
     // Normal Spending card — always first
@@ -674,7 +674,7 @@ function openEditBudget(id, cat, amount) {
       <div class="modal">
         <div class="modal-title">${cat}</div>
         <div class="field">
-          <label>Amount for ${monthLabel(_budgetMonth)}</label>
+          <label>Amount for ${monthLabel(_activeMonth)}</label>
           <input type="number" id="b-limit" step="0.01" min="0" value="${amount === 0 ? '' : amount}" placeholder="0.00" inputmode="decimal">
         </div>
         <div class="modal-actions">

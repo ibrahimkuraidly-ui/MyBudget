@@ -137,6 +137,7 @@ function showApp() {
     `<button id="privacy-btn" class="privacy-btn" onclick="togglePrivacy()"></button>
      <button class="logout-btn" onclick="doLogout()">Logout</button>`;
   setDailyQuote();
+  _privacyMode = localStorage.getItem('helm-privacy') === '1';
   updatePrivacyBtn();
   const savedApp = localStorage.getItem('helm-app') || 'finance';
   _currentApp = savedApp;

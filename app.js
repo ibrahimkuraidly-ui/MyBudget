@@ -206,17 +206,48 @@ function suggestCategory(val) {
 }
 
 let _catDebounce;
+let _autoSuggestedCat = null;
+let _catCorrections = {};
+
+function normalizeDesc(val) {
+  return val.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+async function loadCatCorrections() {
+  try {
+    const rows = await api('GET', 'category_corrections',
+      `user_id=eq.${currentUserId}&select=description_key,category&order=created_at.desc`);
+    _catCorrections = {};
+    rows.forEach(r => {
+      if (!_catCorrections[r.description_key]) _catCorrections[r.description_key] = r.category;
+    });
+  } catch (_) {}
+}
+
+function suggestFromHistory(val) {
+  const key = normalizeDesc(val);
+  if (_catCorrections[key]) return _catCorrections[key];
+  for (const [storedKey, cat] of Object.entries(_catCorrections)) {
+    if (key.includes(storedKey) || storedKey.includes(key)) return cat;
+  }
+  return null;
+}
+
 function debounceCat(val) {
   clearTimeout(_catDebounce);
   const hint = document.getElementById('cat-hint');
-  if (!val || val.trim().length < 2) { if (hint) hint.textContent = ''; return; }
+  if (!val || val.trim().length < 2) { if (hint) hint.textContent = ''; _autoSuggestedCat = null; return; }
   _catDebounce = setTimeout(() => {
-    const suggestion = suggestCategory(val);
+    const suggestion = suggestFromHistory(val) || suggestCategory(val);
     if (suggestion) {
       const sel = document.getElementById('t-cat');
       if (sel) sel.value = suggestion;
+      _autoSuggestedCat = suggestion;
       if (hint) hint.textContent = `→ ${suggestion}`;
-    } else if (hint) hint.textContent = '';
+    } else {
+      _autoSuggestedCat = null;
+      if (hint) hint.textContent = '';
+    }
   }, 400);
 }
 

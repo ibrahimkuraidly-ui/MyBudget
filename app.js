@@ -590,7 +590,7 @@ async function loadDashboard() {
         ${activeGoal && incomeGoalAmt ? `
         <div class="progress-bar"><div class="progress-fill ${pct(expenses, incomeGoalAmt) >= 100 ? 'over' : pct(expenses, incomeGoalAmt) >= 80 ? 'warn' : 'safe'}" style="width:${pct(expenses, incomeGoalAmt)}%"></div></div>
         <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:4px">
-          <span>Spent: ${fmtS(expenses)}</span>
+          <span>Spent: ${privVal(fmtS(expenses))}</span>
           <span>${pct(expenses, incomeGoalAmt)}% of income</span>
         </div>` : ''}
       </div>`;

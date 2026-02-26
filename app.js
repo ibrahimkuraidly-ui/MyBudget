@@ -1511,12 +1511,12 @@ async function loadMarkets() {
 
 // ─── Daily Picks ──────────────────────────────────────────────────────────────
 
-const GEMINI_PICKS_KEY = 'helm-picks-v1';
+const GROQ_PICKS_KEY = 'helm-picks-v1';
 
 async function loadPicks() {
   hideFab();
   const el = document.getElementById('picks-content');
-  const apiKey = localStorage.getItem('helm-gemini-key');
+  const apiKey = localStorage.getItem('helm-groq-key');
 
   if (!apiKey) {
     el.innerHTML = `
@@ -1524,14 +1524,14 @@ async function loadPicks() {
       <div class="card">
         <div class="card-title">One-time Setup</div>
         <div style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:16px">
-          Daily Picks uses Google Gemini AI with live web search to research today's market news and trends, then suggests what to watch or buy today.<br><br>
-          Get a <strong style="color:var(--text)">free API key</strong> from <strong style="color:var(--accent)">aistudio.google.com</strong> — no credit card needed.
+          Daily Picks uses Groq AI to analyze today's live market data and suggest what to watch or buy.<br><br>
+          Get a <strong style="color:var(--text)">free API key</strong> from <strong style="color:var(--accent)">console.groq.com</strong> — no credit card needed.
         </div>
         <div class="field">
-          <label>Gemini API Key</label>
-          <input type="password" id="gemini-key-input" placeholder="AIza..." autocomplete="off">
+          <label>Groq API Key</label>
+          <input type="password" id="groq-key-input" placeholder="gsk_..." autocomplete="off">
         </div>
-        <button class="btn btn-primary" style="width:100%;padding:13px" onclick="saveGeminiKey()">Save & Generate Today's Picks</button>
+        <button class="btn btn-primary" style="width:100%;padding:13px" onclick="saveGroqKey()">Save & Generate Today's Picks</button>
       </div>`;
     return;
   }

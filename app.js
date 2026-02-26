@@ -597,6 +597,8 @@ async function loadTransactions() {
 }
 
 function openAddTxn() {
+  _autoSuggestedCat = null;
+  loadCatCorrections();
   const today = new Date().toISOString().slice(0, 10);
   const cats  = ['Normal Spending', ...BUDGET_ITEMS, 'Other'];
   document.getElementById('modal-root').innerHTML = `

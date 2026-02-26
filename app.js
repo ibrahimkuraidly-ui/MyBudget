@@ -46,13 +46,46 @@ function showLogin() {
 function showApp() {
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app-header').style.display = '';
-  document.getElementById('tab-bar').style.display = '';
   document.getElementById('content').style.display = '';
   document.getElementById('header-right').innerHTML =
     `<button class="logout-btn" onclick="doLogout()">Logout</button>`;
-  const saved = localStorage.getItem('mybudget-tab') || 'dashboard';
-  activateTab(saved);
+  const savedApp = localStorage.getItem('helm-app') || 'finance';
+  _currentApp = savedApp;
+  document.getElementById('tab-bar-finance').style.display = savedApp === 'finance' ? '' : 'none';
+  document.getElementById('tab-bar-invest').style.display = savedApp === 'invest' ? '' : 'none';
+  document.getElementById('opt-finance').classList.toggle('active', savedApp === 'finance');
+  document.getElementById('opt-invest').classList.toggle('active', savedApp === 'invest');
+  const savedTab = localStorage.getItem('mybudget-tab') || 'dashboard';
+  const tab = savedTab === 'investments' ? 'portfolio' : savedTab;
+  activateTab(tab);
 }
+
+function toggleAppSwitcher() {
+  document.getElementById('app-switcher').classList.toggle('hidden');
+}
+
+function switchApp(app) {
+  _currentApp = app;
+  localStorage.setItem('helm-app', app);
+  document.getElementById('app-switcher').classList.add('hidden');
+  document.getElementById('opt-finance').classList.toggle('active', app === 'finance');
+  document.getElementById('opt-invest').classList.toggle('active', app === 'invest');
+  document.getElementById('tab-bar-finance').style.display = app === 'finance' ? '' : 'none';
+  document.getElementById('tab-bar-invest').style.display = app === 'invest' ? '' : 'none';
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  if (app === 'finance') {
+    activateTab(localStorage.getItem('helm-finance-tab') || 'dashboard');
+  } else {
+    activateTab(localStorage.getItem('helm-invest-tab') || 'portfolio');
+  }
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#app-switcher') && !e.target.closest('#logo-switch-btn')) {
+    document.getElementById('app-switcher')?.classList.add('hidden');
+  }
+});
 
 async function doLogin() {
   const email = document.getElementById('login-email').value.trim();

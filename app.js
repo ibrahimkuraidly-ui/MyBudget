@@ -1537,7 +1537,7 @@ async function loadPicks() {
   }
 
   const today = new Date().toISOString().slice(0, 10);
-  const cache = JSON.parse(localStorage.getItem(GEMINI_PICKS_KEY) || 'null');
+  const cache = JSON.parse(localStorage.getItem(GROQ_PICKS_KEY) || 'null');
   if (cache && cache.date === today && cache.text) {
     renderPicks(el, cache.text, cache.time, true);
     return;
@@ -1547,20 +1547,20 @@ async function loadPicks() {
     <div class="page-header"><span class="section-title">Daily Picks</span></div>
     <div class="card" style="text-align:center;padding:36px 20px">
       <div class="spinner" style="margin:0 auto 16px"></div>
-      <div style="font-size:14px;font-weight:600;margin-bottom:6px">Researching today's market...</div>
-      <div style="font-size:12px;color:var(--muted)">Gemini is scanning live news &amp; trends</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:6px">Analyzing today's market...</div>
+      <div style="font-size:12px;color:var(--muted)">Groq AI is crunching live market data</div>
     </div>`;
 
   try {
-    const text = await fetchGeminiPicks(apiKey);
+    const text = await fetchGroqPicks(apiKey);
     const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-    localStorage.setItem(GEMINI_PICKS_KEY, JSON.stringify({ date: today, text, time }));
+    localStorage.setItem(GROQ_PICKS_KEY, JSON.stringify({ date: today, text, time }));
     renderPicks(el, text, time, false);
   } catch (e) {
     el.innerHTML = `
       <div class="page-header">
         <span class="section-title">Daily Picks</span>
-        <button class="btn btn-sm btn-danger" onclick="clearGeminiKey()">Reset Key</button>
+        <button class="btn btn-sm btn-danger" onclick="clearGroqKey()">Reset Key</button>
       </div>
       <div class="empty-state">
         <div class="empty-state-icon">⚠️</div>
@@ -1570,7 +1570,7 @@ async function loadPicks() {
   }
 }
 
-async function fetchGeminiPicks(apiKey) {
+async function fetchGroqPicks(apiKey) {
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
   // Gather live market data to pass as context
@@ -1626,41 +1626,27 @@ After the 3 picks, end with:
 
 *Not financial advice. Always do your own research.*`;
 
-  // Try models in order — stops at first success
-  const MODELS = [
-    'gemini-2.0-flash-lite',
-    'gemini-2.0-flash',
-    'gemini-1.5-flash',
-    'gemini-1.5-flash-8b',
-    'gemini-1.5-pro',
-  ];
-  let resp = null, lastErr = 'No Gemini model available for this API key.';
-  for (const model of MODELS) {
-    let r;
-    try {
-      r = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.7, maxOutputTokens: 1200 }
-          })
-        }
-      );
-    } catch (e) { lastErr = e.message; continue; }
-    if (r.ok) { resp = r; break; }
-    const errData = await r.json().catch(() => ({}));
-    const msg = errData.error?.message || '';
-    // If model not found, try the next one. Any other error (quota, auth) — stop.
-    if (msg.toLowerCase().includes('not found')) { lastErr = msg; continue; }
-    throw new Error(msg || `Gemini error ${r.status}`);
+  const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.7,
+      max_tokens: 1200,
+    })
+  });
+
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error?.message || `Groq API error ${resp.status}`);
   }
-  if (!resp) throw new Error(lastErr);
   const data = await resp.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error('No response from Gemini — check your API key.');
+  const text = data.choices?.[0]?.message?.content;
+  if (!text) throw new Error('No response from Groq — check your API key.');
   return text;
 }
 
@@ -1685,24 +1671,24 @@ function renderPicks(el, text, time, fromCache) {
     </div>
     <div class="card" style="font-size:13px;line-height:1.85;color:var(--text)">${safe}</div>
     <div style="text-align:right;margin-top:10px">
-      <button class="btn btn-sm btn-secondary" style="font-size:11px;color:var(--muted)" onclick="clearGeminiKey()">🔑 Change API Key</button>
+      <button class="btn btn-sm btn-secondary" style="font-size:11px;color:var(--muted)" onclick="clearGroqKey()">🔑 Change API Key</button>
     </div>`;
 }
 
-function saveGeminiKey() {
-  const key = document.getElementById('gemini-key-input')?.value.trim();
+function saveGroqKey() {
+  const key = document.getElementById('groq-key-input')?.value.trim();
   if (!key) { showToast('Enter your API key', 'error'); return; }
-  localStorage.setItem('helm-gemini-key', key);
+  localStorage.setItem('helm-groq-key', key);
   loadPicks();
 }
 
-function clearGeminiKey() {
-  localStorage.removeItem('helm-gemini-key');
-  localStorage.removeItem(GEMINI_PICKS_KEY);
+function clearGroqKey() {
+  localStorage.removeItem('helm-groq-key');
+  localStorage.removeItem(GROQ_PICKS_KEY);
   loadPicks();
 }
 
 function forceRefreshPicks() {
-  localStorage.removeItem(GEMINI_PICKS_KEY);
+  localStorage.removeItem(GROQ_PICKS_KEY);
   loadPicks();
 }

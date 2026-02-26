@@ -1404,15 +1404,22 @@ async function loadMarkets() {
   const el = document.getElementById('markets-content');
   el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {
-    const binanceSymbols = JSON.stringify(MARKET_CRYPTOS.map(c => c.binance));
-    const [tickersResult, fngResult, coincapResult] = await Promise.allSettled([
-      fetchJSON(`https://api.binance.com/api/v3/ticker/24hr?symbols=${encodeURIComponent(binanceSymbols)}`),
+    // Fetch each coin individually — one failure won't break the rest
+    const [coinResults, fngResult, coincapResult] = await Promise.allSettled([
+      Promise.allSettled(MARKET_CRYPTOS.map(c =>
+        fetchJSON(`https://api.binance.com/api/v3/ticker/24hr?symbol=${c.binance}`)
+      )),
       fetchJSON('https://api.alternative.me/fng/'),
       fetchJSON('https://api.coincap.io/v2/assets?limit=20'),
     ]);
 
-    const tickers = tickersResult.status === 'fulfilled' ? tickersResult.value : null;
-    const fng     = fngResult.status     === 'fulfilled' ? fngResult.value?.data?.[0] : null;
+    const tickerMap = {};
+    if (coinResults.status === 'fulfilled') {
+      coinResults.value.forEach((r, i) => {
+        if (r.status === 'fulfilled' && r.value) tickerMap[MARKET_CRYPTOS[i].binance] = r.value;
+      });
+    }
+    const fng      = fngResult.status     === 'fulfilled' ? fngResult.value?.data?.[0] : null;
     const caAssets = coincapResult.status === 'fulfilled' ? coincapResult.value?.data || [] : [];
 
     let html = `<div class="page-header">

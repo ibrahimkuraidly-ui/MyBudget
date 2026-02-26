@@ -1127,7 +1127,7 @@ async function loadPortfolio() {
     <div class="stat-row two" style="margin-bottom:12px">
       <div class="nw-banner" style="flex:1;margin-bottom:0">
         <div class="nw-label">Total Portfolio</div>
-        <div class="nw-value">${fmtS(total)}</div>
+        <div class="nw-value">${privVal(fmtS(total))}</div>
       </div>
       <div class="nw-banner" style="flex:1;margin-bottom:0" id="gold-card">
         <div class="nw-label">Gold (oz)</div>

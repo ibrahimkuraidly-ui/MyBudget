@@ -488,9 +488,7 @@ async function loadDashboard() {
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div class="card-title">AI Insights</div>
-          ${getClaudeKey()
-            ? `<button id="insights-btn" class="btn btn-sm btn-secondary" onclick="generateInsights()">Generate</button>`
-            : `<button class="btn btn-sm btn-secondary" onclick="openSetClaudeKey()">Set API Key</button>`}
+          <button id="insights-btn" class="btn btn-sm btn-secondary" onclick="generateInsights()">Generate</button>
         </div>
         <div id="insights-content" style="margin-top:8px;font-size:13px;color:var(--muted)">
           Tap Generate to get AI insights on your spending.

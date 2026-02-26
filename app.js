@@ -509,6 +509,23 @@ async function loadDashboard() {
       </div>`;
     }
 
+    // Cache data for AI insights
+    _dashData = { byCat, budgetMap, expenses, incomeGoalAmt, flexRemaining, nsBudget,
+                  grocRemaining, saraRemaining, coBalance, secBalance, month: _activeMonth };
+
+    html += `
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="card-title">AI Insights</div>
+          ${getClaudeKey()
+            ? `<button id="insights-btn" class="btn btn-sm btn-secondary" onclick="generateInsights()">Generate</button>`
+            : `<button class="btn btn-sm btn-secondary" onclick="openSetClaudeKey()">Set API Key</button>`}
+        </div>
+        <div id="insights-content" style="margin-top:8px;font-size:13px;color:var(--muted)">
+          Tap Generate to get AI insights on your spending.
+        </div>
+      </div>`;
+
     el.innerHTML = html;
   } catch (e) {
     el.innerHTML = `<div class="empty-state"><div class="empty-state-text">Error loading dashboard</div></div>`;

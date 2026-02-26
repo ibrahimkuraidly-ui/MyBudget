@@ -481,6 +481,7 @@ function loadPage(tab) {
     case 'savings':      loadSavings();      break;
     case 'portfolio':    loadPortfolio();    break;
     case 'markets':      loadMarkets();      break;
+    case 'picks':        loadPicks();        break;
   }
 }
 

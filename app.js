@@ -1499,4 +1499,8 @@ async function loadMarkets() {
   } catch (e) {
     el.innerHTML = `<div class="empty-state"><div class="empty-state-text">Error loading — tap refresh</div></div>`;
   }
+
+  // Auto-refresh every 60s — restart the timer each call so only one runs at a time
+  clearTimeout(_marketsTimer);
+  _marketsTimer = setTimeout(loadMarkets, 60000);
 }

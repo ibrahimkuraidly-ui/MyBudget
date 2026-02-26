@@ -9,6 +9,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 let authToken = null;
 let currentUserId = null;
 let _currentApp = 'finance';
+let _privacyMode = false;
 
 const ACCOUNT_TYPES = ['401k','Roth IRA','Traditional IRA','Brokerage','HSA','Crypto','Savings Bond','Other'];
 

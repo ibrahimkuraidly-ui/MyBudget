@@ -1404,34 +1404,29 @@ async function loadMarkets() {
   const el = document.getElementById('markets-content');
   el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {
-    // Fetch each coin individually — one failure won't break the rest
-    const [coinResults, fngResult, coincapResult] = await Promise.allSettled([
-      Promise.allSettled(MARKET_CRYPTOS.map(c =>
-        fetchJSON(`https://api.binance.com/api/v3/ticker/24hr?symbol=${c.binance}`)
-      )),
+    const [cpTickersResult, fngResult, cpGlobalResult] = await Promise.allSettled([
+      fetchJSON('https://api.coinpaprika.com/v1/tickers?quotes=USD&limit=100'),
       fetchJSON('https://api.alternative.me/fng/'),
-      fetchJSON('https://api.coincap.io/v2/assets?limit=20'),
+      fetchJSON('https://api.coinpaprika.com/v1/global'),
     ]);
 
+    // Build symbol → ticker map from CoinPaprika
+    const cpTickers = cpTickersResult.status === 'fulfilled' ? cpTickersResult.value : [];
     const tickerMap = {};
-    if (coinResults.status === 'fulfilled') {
-      coinResults.value.forEach((r, i) => {
-        if (r.status === 'fulfilled' && r.value) tickerMap[MARKET_CRYPTOS[i].binance] = r.value;
-      });
-    }
-    const fng      = fngResult.status     === 'fulfilled' ? fngResult.value?.data?.[0] : null;
-    const caAssets = coincapResult.status === 'fulfilled' ? coincapResult.value?.data || [] : [];
+    cpTickers.forEach(t => { tickerMap[t.symbol] = t; });
+
+    const fng      = fngResult.status      === 'fulfilled' ? fngResult.value?.data?.[0] : null;
+    const cpGlobal = cpGlobalResult.status === 'fulfilled' ? cpGlobalResult.value : null;
 
     let html = `<div class="page-header">
       <span class="section-title">Markets</span>
       <button class="btn btn-sm btn-secondary" onclick="loadMarkets()">↻ Refresh</button>
     </div>`;
 
-    // ── Market Overview (from CoinCap — optional) ──
-    if (caAssets.length) {
-      const totalMcap = caAssets.reduce((s, a) => s + parseFloat(a.marketCapUsd || 0), 0);
-      const btcAsset  = caAssets.find(a => a.symbol === 'BTC');
-      const btcDom    = btcAsset && totalMcap ? (parseFloat(btcAsset.marketCapUsd) / totalMcap * 100) : null;
+    // ── Market Overview (from CoinPaprika global) ──
+    if (cpGlobal) {
+      const totalMcap = cpGlobal.market_cap_usd;
+      const btcDom    = cpGlobal.bitcoin_dominance_percentage;
       html += `<div class="card">
         <div class="card-title">Market Overview</div>
         <div style="display:flex;justify-content:space-between;align-items:center">
@@ -1468,15 +1463,16 @@ async function loadMarkets() {
       </div>`;
     }
 
-    // ── Crypto Prices (from Binance) ──
+    // ── Crypto Prices (from CoinPaprika) ──
     html += `<div class="card"><div class="card-title">Crypto</div>`;
-    const anyPrices = Object.keys(tickerMap).length > 0;
+    const anyPrices = cpTickers.length > 0;
     if (anyPrices) {
       MARKET_CRYPTOS.forEach(c => {
-        const t = tickerMap[c.binance];
+        const t = tickerMap[c.cpSym];
         if (!t) return;
-        const price  = parseFloat(t.lastPrice);
-        const change = parseFloat(t.priceChangePercent);
+        const price  = t.quotes?.USD?.price;
+        const change = t.quotes?.USD?.percent_change_24h;
+        if (price == null) return;
         const priceStr   = price >= 1
           ? '$' + price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
           : '$' + price.toFixed(4);

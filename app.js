@@ -1505,5 +1505,5 @@ async function loadMarkets() {
 
   // Auto-refresh every 60s — restart the timer each call so only one runs at a time
   clearTimeout(_marketsTimer);
-  _marketsTimer = setTimeout(loadMarkets, 60000);
+  _marketsTimer = setTimeout(loadMarkets, 300000); // CoinPaprika updates every 5 min
 }

@@ -712,7 +712,7 @@ async function loadTransactions() {
               <div class="list-item-sub"><span class="cat-tag">${t.category}</span>${txnCard(t) !== 'Debit' ? ` · <span class="cat-tag">${txnCard(t)}</span>` : ''}</div>
             </div>
             <div class="list-item-right" style="display:flex;align-items:center;gap:8px">
-              <span class="amount-expense">-${fmt(t.amount)}</span>
+              <span class="amount-expense">${privVal('-' + fmt(t.amount))}</span>
               <button class="btn btn-sm btn-danger" onclick="deleteTxn('${t.id}')">✕</button>
             </div>
           </div>`;

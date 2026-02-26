@@ -405,7 +405,6 @@ async function loadDashboard() {
 
 // ─── Transactions ─────────────────────────────────────────────────────────────
 
-let _txnMonth = currMonth();
 
 async function loadTransactions() {
   hideFab();

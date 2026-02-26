@@ -133,8 +133,10 @@ function showApp() {
   document.getElementById('app-header').style.display = '';
   document.getElementById('content').style.display = '';
   document.getElementById('header-right').innerHTML =
-    `<button class="logout-btn" onclick="doLogout()">Logout</button>`;
+    `<button id="privacy-btn" class="privacy-btn" onclick="togglePrivacy()"></button>
+     <button class="logout-btn" onclick="doLogout()">Logout</button>`;
   setDailyQuote();
+  updatePrivacyBtn();
   const savedApp = localStorage.getItem('helm-app') || 'finance';
   _currentApp = savedApp;
   document.getElementById('tab-bar-finance').style.display = savedApp === 'finance' ? '' : 'none';

@@ -1420,10 +1420,12 @@ async function loadMarkets() {
     const fng      = fngResult.status      === 'fulfilled' ? fngResult.value?.data?.[0] : null;
     const cpGlobal = cpGlobalResult.status === 'fulfilled' ? cpGlobalResult.value : null;
 
+    const updatedAt = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     let html = `<div class="page-header">
       <span class="section-title">Markets</span>
       <button class="btn btn-sm btn-secondary" onclick="loadMarkets()">↻ Refresh</button>
-    </div>`;
+    </div>
+    <div style="font-size:11px;color:var(--muted);text-align:right;margin-bottom:8px">Updated ${updatedAt}</div>`;
 
     // ── Market Overview (from CoinPaprika global) ──
     if (cpGlobal) {

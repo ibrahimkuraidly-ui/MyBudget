@@ -990,9 +990,16 @@ async function loadInvestments() {
       <span class="section-title">Investments</span>
       <button class="btn btn-primary btn-sm" onclick="openAddAccount()">+ Add Account</button>
     </div>
-    <div class="nw-banner" style="margin-bottom:12px">
-      <div class="nw-label">Total Portfolio</div>
-      <div class="nw-value">${fmtS(total)}</div>
+    <div class="stat-row two" style="margin-bottom:12px">
+      <div class="nw-banner" style="flex:1;margin-bottom:0">
+        <div class="nw-label">Total Portfolio</div>
+        <div class="nw-value">${fmtS(total)}</div>
+      </div>
+      <div class="nw-banner" style="flex:1;margin-bottom:0" id="gold-card">
+        <div class="nw-label">Gold (oz)</div>
+        <div class="nw-value" id="gold-price" style="font-size:18px">—</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px" id="gold-change"></div>
+      </div>
     </div>`;
 
     if (chartDates.length > 1) {

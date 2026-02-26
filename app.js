@@ -573,9 +573,9 @@ function openAddTxn() {
       <div class="modal">
         <div class="modal-title">Add Expense</div>
         <div class="field"><label>Amount</label><input type="number" id="t-amount" placeholder="0.00" step="0.01" min="0" inputmode="decimal"></div>
+        <div class="field"><label>Description (optional)</label><input type="text" id="t-desc" placeholder="e.g. Grocery run, Netflix" oninput="debounceCat(this.value)"></div>
         <div class="field"><label>Category <span id="cat-hint" style="font-size:11px;color:var(--muted)"></span></label><select id="t-cat">${cats.map(c => `<option>${c}</option>`).join('')}</select></div>
         <div class="field"><label>Date</label><input type="date" id="t-date" value="${today}"></div>
-        <div class="field"><label>Description (optional)</label><input type="text" id="t-desc" placeholder="e.g. Grocery run, Netflix" oninput="debounceCat(this.value)"></div>
         <div class="field"><label>Card</label><select id="t-pm"><option>Debit</option><option>Capital One</option><option>Secure</option></select></div>
         <div class="modal-actions">
           <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>

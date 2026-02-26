@@ -552,7 +552,6 @@ async function submitCardPayment(card) {
 
 const BUDGET_ITEMS = ['Rent','Groceries','Phone Bill','Electric Bill','Sara Allowance','Savings','Baba Allowance','Auto Insurance','Subscriptions'];
 
-let _budgetMonth = currMonth();
 
 async function loadBudget() {
   hideFab();

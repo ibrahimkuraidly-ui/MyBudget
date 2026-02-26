@@ -983,11 +983,11 @@ async function loadSavings() {
       html += `<div class="card" style="margin-bottom:12px">
         <div style="display:flex;justify-content:space-between;margin-bottom:4px">
           <span style="color:var(--muted);font-size:13px">Total Saved</span>
-          <span style="font-weight:700;color:var(--green)">${fmt(totalSaved)}</span>
+          <span style="font-weight:700;color:var(--green)">${privVal(fmt(totalSaved))}</span>
         </div>
         <div style="display:flex;justify-content:space-between">
           <span style="color:var(--muted);font-size:13px">Total Target</span>
-          <span style="font-weight:700">${fmt(totalTarget)}</span>
+          <span style="font-weight:700">${privVal(fmt(totalTarget))}</span>
         </div>
       </div>`;
 

@@ -164,5 +164,9 @@ header { position: fixed; top: 0; left: 0; right: 0; height: var(--header-h); ba
 .app-switch-opt:hover { background: var(--bg-input); }
 .app-switch-opt.active { color: var(--accent); background: rgba(241,245,249,0.08); }
 
+/* Privacy button */
+.privacy-btn { background: none; border: none; color: var(--muted); cursor: pointer; padding: 4px 6px; display: inline-flex; align-items: center; -webkit-tap-highlight-color: transparent; margin-right: 4px; }
+.privacy-btn.active { color: var(--accent); }
+
 /* Daily quote */
 .daily-quote { flex: 1; text-align: center; font-size: 10px; color: var(--muted); font-style: italic; padding: 0 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; opacity: 0.6; letter-spacing: 0.2px; }

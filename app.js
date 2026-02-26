@@ -1684,12 +1684,14 @@ function saveGroqKey() {
   const key = document.getElementById('groq-key-input')?.value.trim();
   if (!key) { showToast('Enter your API key', 'error'); return; }
   localStorage.setItem('helm-groq-key', key);
+  sb.auth.updateUser({ data: { groq_key: key } }).catch(() => {});
   loadPicks();
 }
 
 function clearGroqKey() {
   localStorage.removeItem('helm-groq-key');
   localStorage.removeItem(GROQ_PICKS_KEY);
+  sb.auth.updateUser({ data: { groq_key: null } }).catch(() => {});
   loadPicks();
 }
 

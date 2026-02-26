@@ -1197,7 +1197,7 @@ async function submitSnapshot(accountId) {
   if (!balance || !date) { showToast('Fill in balance and date', 'error'); return; }
   try {
     await api('POST', 'investment_snapshots', '', { account_id: accountId, user_id: currentUserId, date, balance, contributions });
-    closeModal(); showToast('Balance logged', 'success'); loadInvestments();
+    closeModal(); showToast('Balance logged', 'success'); loadPortfolio();
   } catch (e) { showToast(e.message, 'error'); }
 }
 

@@ -12,6 +12,69 @@ let _currentApp = 'finance';
 
 const ACCOUNT_TYPES = ['401k','Roth IRA','Traditional IRA','Brokerage','HSA','Crypto','Savings Bond','Other'];
 
+// ─── Daily Quote ─────────────────────────────────────────────────────────────
+
+const DAILY_QUOTES = [
+  'Small steps, big wealth.',
+  'Save today, live better.',
+  'Every dollar counts.',
+  'Budget now, freedom later.',
+  'Your future self thanks you.',
+  'Wealth is built daily.',
+  'Spend with intention.',
+  'Goals don\'t wait.',
+  'Track it to stack it.',
+  'Discipline today, options tomorrow.',
+  'Invest in yourself.',
+  'Make money work for you.',
+  'Progress, not perfection.',
+  'Rich is a mindset first.',
+  'Consistency wins.',
+  'Know where it goes.',
+  'Build wealth, not debt.',
+  'Save first, spend the rest.',
+  'Dream big, plan smart.',
+  'Control your money.',
+  'Decide. Act. Repeat.',
+  'Small cuts, big gains.',
+  'Money saved is power.',
+  'Stay the course.',
+  'Habits shape wealth.',
+  'Think long term.',
+  'Automate good habits.',
+  'Patience compounds wealth.',
+  'Debt-free is freedom.',
+  'Own your choices.',
+  'Winners track spending.',
+  'Keep going.',
+  'One budget at a time.',
+  'Today\'s savings, tomorrow\'s options.',
+  'Earn more, spend less.',
+  'Time in market beats timing.',
+  'A goal without a plan is a wish.',
+  'Slow and steady builds wealth.',
+  'Financial clarity is freedom.',
+  'Spend less than you earn.',
+  'Invest before you spend.',
+  'Make it automatic.',
+  'Net worth over net image.',
+  'Cut waste, not joy.',
+  'Every cent has a job.',
+  'Future you is watching.',
+  'Start before you\'re ready.',
+  'One decision at a time.',
+  'Money follows attention.',
+  'Done is better than perfect.',
+];
+
+function setDailyQuote() {
+  const start = new Date(new Date().getFullYear(), 0, 0);
+  const dayOfYear = Math.floor((new Date() - start) / 86400000);
+  const quote = DAILY_QUOTES[dayOfYear % DAILY_QUOTES.length];
+  const el = document.getElementById('daily-quote');
+  if (el) el.textContent = quote;
+}
+
 // ─── Auth ────────────────────────────────────────────────────────────────────
 
 async function initAuth() {

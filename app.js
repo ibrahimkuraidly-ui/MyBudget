@@ -237,10 +237,10 @@ async function loadDashboard() {
   const el = document.getElementById('dash-content');
   el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {
-    const mr = monthRange(_dashMonth);
+    const mr = monthRange(_activeMonth);
     const [txns, budgets, goals, snapshots, allIncomeGoals, allCardTxns] = await Promise.all([
       api('GET', 'transactions', `user_id=eq.${currentUserId}&${mr}&type=eq.expense&category=neq.__card_payment__&select=*&order=date.desc,created_at.desc`),
-      api('GET', 'budgets',      `user_id=eq.${currentUserId}&month=eq.${_dashMonth}&category=neq.__income_goal__&select=*`),
+      api('GET', 'budgets',      `user_id=eq.${currentUserId}&month=eq.${_activeMonth}&category=neq.__income_goal__&select=*`),
       api('GET', 'savings_goals', `user_id=eq.${currentUserId}&select=*`),
       api('GET', 'investment_snapshots', `user_id=eq.${currentUserId}&select=*&order=date.desc`),
       api('GET', 'budgets', `user_id=eq.${currentUserId}&category=eq.__income_goal__&select=*&order=created_at.desc`),
@@ -319,9 +319,9 @@ async function loadDashboard() {
         </div>
       </div>
       <div class="month-bar">
-        <button class="month-nav" onclick="_dashMonth=prevMonth(_dashMonth);loadDashboard()">&#8249;</button>
-        <span class="month-label">${monthLabel(_dashMonth)}</span>
-        <button class="month-nav" onclick="_dashMonth=nextMonth(_dashMonth);loadDashboard()">&#8250;</button>
+        <button class="month-nav" onclick="_activeMonth=prevMonth(_activeMonth);loadDashboard()">&#8249;</button>
+        <span class="month-label">${monthLabel(_activeMonth)}</span>
+        <button class="month-nav" onclick="_activeMonth=nextMonth(_activeMonth);loadDashboard()">&#8250;</button>
       </div>
       <div class="stat-row two">
         <div class="stat-card"><div class="stat-label">Spent</div><div class="stat-value red">${fmtS(expenses)}</div></div>

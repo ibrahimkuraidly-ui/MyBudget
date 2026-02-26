@@ -999,9 +999,9 @@ async function deleteGoal(id) {
 
 let _investChart = null;
 
-async function loadInvestments() {
+async function loadPortfolio() {
   hideFab();
-  const el = document.getElementById('invest-content');
+  const el = document.getElementById('portfolio-content');
   el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {
     const [accounts, snapshots] = await Promise.all([

@@ -1470,13 +1470,14 @@ async function loadMarkets() {
 
     // ── Crypto Prices (from Binance) ──
     html += `<div class="card"><div class="card-title">Crypto</div>`;
-    if (tickers && tickers.length) {
+    const anyPrices = Object.keys(tickerMap).length > 0;
+    if (anyPrices) {
       MARKET_CRYPTOS.forEach(c => {
-        const t = tickers.find(x => x.symbol === c.binance);
+        const t = tickerMap[c.binance];
         if (!t) return;
         const price  = parseFloat(t.lastPrice);
         const change = parseFloat(t.priceChangePercent);
-        const priceStr  = price >= 1
+        const priceStr   = price >= 1
           ? '$' + price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
           : '$' + price.toFixed(4);
         const changeStr  = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';

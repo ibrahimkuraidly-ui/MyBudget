@@ -1286,42 +1286,25 @@ const MARKET_CRYPTOS = [
   { id: 'crypto-com-chain', sym: 'CRO', name: 'Cronos' },
 ];
 
-const MARKET_STOCKS = ['AAPL','NVDA','TSLA','MSFT','AMZN','GOOGL','META'];
-const MARKET_STOCK_NAMES = {
-  AAPL: 'Apple', NVDA: 'NVIDIA', TSLA: 'Tesla', MSFT: 'Microsoft',
-  AMZN: 'Amazon', GOOGL: 'Alphabet', META: 'Meta',
-};
-
 async function loadMarkets() {
   hideFab();
   const el = document.getElementById('markets-content');
   el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
 
-  const cryptoIds  = MARKET_CRYPTOS.map(c => c.id).join(',');
-  const finnhubKey = localStorage.getItem('helm-finnhub-key');
-
-  // Fetch crypto always; stocks only if key is set
-  const [cryptoResult, stocksResult] = await Promise.allSettled([
-    fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${cryptoIds}&vs_currencies=usd&include_24hr_change=true`)
-      .then(r => r.json()),
-    finnhubKey
-      ? Promise.all(MARKET_STOCKS.map(sym =>
-          fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${finnhubKey}`)
-            .then(r => r.json())
-            .then(d => ({ sym, c: d.c, dp: d.dp }))
-        ))
-      : Promise.resolve(null),
-  ]);
+  const cryptoIds = MARKET_CRYPTOS.map(c => c.id).join(',');
+  let data = null;
+  try {
+    data = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${cryptoIds}&vs_currencies=usd&include_24hr_change=true`)
+      .then(r => r.json());
+  } catch (_) {}
 
   let html = `<div class="page-header">
     <span class="section-title">Markets</span>
     <button class="btn btn-sm btn-secondary" onclick="loadMarkets()">↻ Refresh</button>
-  </div>`;
+  </div>
+  <div class="card"><div class="card-title">Crypto</div>`;
 
-  // ── Crypto ──
-  html += `<div class="card"><div class="card-title">Crypto</div>`;
-  if (cryptoResult.status === 'fulfilled' && cryptoResult.value) {
-    const data = cryptoResult.value;
+  if (data) {
     MARKET_CRYPTOS.forEach(c => {
       const info = data[c.id];
       if (!info) return;
@@ -1344,77 +1327,9 @@ async function loadMarkets() {
       </div>`;
     });
   } else {
-    html += `<div style="color:var(--muted);font-size:13px;padding:8px 0">Crypto prices unavailable</div>`;
+    html += `<div style="color:var(--muted);font-size:13px;padding:8px 0">Prices unavailable — check your connection</div>`;
   }
+
   html += `</div>`;
-
-  // ── Stocks ──
-  html += `<div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div class="card-title" style="margin-bottom:0">Stocks</div>
-      <button class="btn btn-sm btn-secondary" onclick="openStockKeySetup()">${finnhubKey ? 'Edit Key' : 'Set Up'}</button>
-    </div>`;
-
-  if (!finnhubKey) {
-    html += `<div style="color:var(--muted);font-size:13px;line-height:1.7">
-      Live stock prices need a free Finnhub API key.<br>
-      Sign up at <strong style="color:var(--accent)">finnhub.io</strong> — free, no credit card.<br>
-      Copy your token and tap <strong>Set Up</strong>.
-    </div>`;
-  } else if (stocksResult.status === 'fulfilled' && stocksResult.value) {
-    stocksResult.value.forEach(q => {
-      if (!q || !q.c) return;
-      const name       = MARKET_STOCK_NAMES[q.sym] || q.sym;
-      const priceStr   = '$' + q.c.toFixed(2);
-      const changeStr  = q.dp != null ? (q.dp >= 0 ? '+' : '') + q.dp.toFixed(2) + '%' : '—';
-      const changeColor = q.dp != null && q.dp >= 0 ? 'var(--green)' : 'var(--red)';
-      html += `<div class="list-item">
-        <div class="list-item-left">
-          <div class="list-item-title">${name}</div>
-          <div class="list-item-sub">${q.sym}</div>
-        </div>
-        <div class="list-item-right">
-          <div style="font-size:15px;font-weight:700">${priceStr}</div>
-          <div style="font-size:12px;color:${changeColor}">${changeStr}</div>
-        </div>
-      </div>`;
-    });
-  } else {
-    html += `<div style="color:var(--muted);font-size:13px;padding:8px 0">Could not fetch stock prices. Check your API key.</div>`;
-  }
-  html += `</div>`;
-
   el.innerHTML = html;
-}
-
-function openStockKeySetup() {
-  const current = localStorage.getItem('helm-finnhub-key') || '';
-  document.getElementById('modal-root').innerHTML = `
-    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
-      <div class="modal">
-        <div class="modal-title">Stock API Key</div>
-        <div style="color:var(--muted);font-size:13px;margin-bottom:16px;line-height:1.6">
-          Get a free token at <strong style="color:var(--accent)">finnhub.io</strong> — sign up, go to Dashboard, copy your API token.
-        </div>
-        <div class="field">
-          <label>Finnhub API Token</label>
-          <input type="text" id="fh-key" placeholder="your_token_here" value="${current}" autocomplete="off" autocorrect="off" autocapitalize="none">
-        </div>
-        <div class="modal-actions">
-          <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-          <button class="btn btn-primary" onclick="saveStockKey()">Save</button>
-        </div>
-      </div>
-    </div>`;
-}
-
-function saveStockKey() {
-  const val = document.getElementById('fh-key').value.trim();
-  if (val) {
-    localStorage.setItem('helm-finnhub-key', val);
-  } else {
-    localStorage.removeItem('helm-finnhub-key');
-  }
-  closeModal();
-  loadMarkets();
 }

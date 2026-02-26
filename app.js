@@ -323,10 +323,6 @@ async function loadDashboard() {
           <div class="stat-value" style="color:${secBalance/1000>=0.6?'var(--red)':secBalance/1000>=0.3?'var(--orange)':'var(--green)'}">${fmt(secBalance)}</div>
         </div>
       </div>
-      <div class="stat-row two">
-        <div class="stat-card"><div class="stat-label">Spent</div><div class="stat-value red">${fmtS(expenses)}</div></div>
-        <div class="stat-card"><div class="stat-label">Remaining</div><div class="stat-value ${remaining != null && remaining >= 0 ? 'green' : 'red'}">${remaining != null ? fmtS(remaining) : '—'}</div></div>
-      </div>
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${activeGoal ? '10px' : '0'}">
           <div>

@@ -1521,7 +1521,19 @@ const GROQ_PICKS_KEY = 'helm-picks-v1';
 async function loadPicks() {
   hideFab();
   const el = document.getElementById('picks-content');
-  const apiKey = localStorage.getItem('helm-groq-key');
+  let apiKey = localStorage.getItem('helm-groq-key');
+
+  // If not in localStorage, try pulling from Supabase user metadata
+  if (!apiKey) {
+    try {
+      const { data: { user } } = await sb.auth.getUser();
+      const cloudKey = user?.user_metadata?.groq_key;
+      if (cloudKey) {
+        localStorage.setItem('helm-groq-key', cloudKey);
+        apiKey = cloudKey;
+      }
+    } catch (_) {}
+  }
 
   if (!apiKey) {
     el.innerHTML = `

@@ -1626,17 +1626,29 @@ After the 3 picks, end with:
 
 *Not financial advice. Always do your own research.*`;
 
-  const resp = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 1200 }
-      })
-    }
-  );
+  // Try models in order until one works
+  const models = ['gemini-2.0-flash-lite', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
+  let resp, lastErr;
+  for (const model of models) {
+    try {
+      resp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 1200 }
+          })
+        }
+      );
+      if (resp.ok) break;
+      const errData = await resp.json().catch(() => ({}));
+      lastErr = errData.error?.message || `API error ${resp.status}`;
+      resp = null;
+    } catch (e) { lastErr = e.message; resp = null; }
+  }
+  if (!resp) throw new Error(lastErr || 'All Gemini models unavailable');
 
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({}));

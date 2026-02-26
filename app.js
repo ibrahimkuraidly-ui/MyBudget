@@ -473,6 +473,7 @@ function activateTab(tab) {
 }
 
 function loadPage(tab) {
+  if (tab !== 'markets') { clearTimeout(_marketsTimer); _marketsTimer = null; }
   switch (tab) {
     case 'dashboard':    loadDashboard();    break;
     case 'transactions': loadTransactions(); break;

@@ -2257,10 +2257,23 @@ async function saveGroceryItem() {
 }
 
 async function toggleGroceryToBuy(id, current) {
+  const newState = !current;
+  const btn = document.getElementById('cart-' + id);
+  if (btn) {
+    const svg = btn.querySelector('svg');
+    svg.setAttribute('stroke', newState ? '#22c55e' : 'var(--muted)');
+    svg.setAttribute('fill', newState ? 'rgba(34,197,94,0.15)' : 'none');
+    btn.onclick = () => toggleGroceryToBuy(id, newState);
+  }
   try {
-    await api('PATCH', 'grocery_items', `id=eq.${id}`, { to_buy: !current });
-    loadGrocery();
+    await api('PATCH', 'grocery_items', `id=eq.${id}`, { to_buy: newState });
   } catch(e) {
+    if (btn) {
+      const svg = btn.querySelector('svg');
+      svg.setAttribute('stroke', current ? '#22c55e' : 'var(--muted)');
+      svg.setAttribute('fill', current ? 'rgba(34,197,94,0.15)' : 'none');
+      btn.onclick = () => toggleGroceryToBuy(id, current);
+    }
     showToast(e.message, 'error');
   }
 }

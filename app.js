@@ -2112,10 +2112,15 @@ async function loadGrocery() {
           grouped[cat].push(item);
         });
         CAT_ORDER.filter(cat => grouped[cat].length > 0).forEach(cat => {
+          const catId = cat.replace(/[^a-zA-Z0-9]/g, '_');
+          const collapsed = !!_groceryCollapsed[cat];
           html += `
             <div style="margin-bottom:4px">
-              <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;padding:8px 4px 6px">${cat}</div>
-              <div class="card" style="padding:0 12px">`;
+              <div onclick="toggleGroceryCategory('${cat}')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:8px 4px 6px">
+                <span style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600">${cat} <span style="font-weight:400;opacity:0.7">(${grouped[cat].length})</span></span>
+                <svg id="gchev-${catId}" viewBox="0 0 24 24" width="14" height="14" stroke="var(--muted)" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s;${collapsed ? 'transform:rotate(-90deg)' : ''}"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+              <div id="gcat-${catId}" class="card" style="padding:0 12px;${collapsed ? 'display:none' : ''}">`;
           grouped[cat].forEach(item => {
             html += `<div class="list-item">
               <div class="list-item-left"><div class="list-item-title">${item.name}</div></div>

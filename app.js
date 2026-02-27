@@ -2210,3 +2210,121 @@ async function doneShopping() {
     showToast(e.message, 'error');
   }
 }
+
+function generateDietAnalysis(items) {
+  const GROUPS = {
+    protein:    { label: 'Protein',         icon: '🥩', color: '#f97316',
+                  rec: 'chicken, salmon, eggs, lentils, or beans',
+                  keys: ['chicken','beef','fish','salmon','tuna','shrimp','turkey','lamb','pork','egg','eggs','tofu','tempeh','lentil','lentils','bean','beans','chickpea','chickpeas','edamame','steak','tilapia','cod','sardine','crab','protein','meat'] },
+    vegetables: { label: 'Vegetables',      icon: '🥦', color: '#22c55e',
+                  rec: 'spinach, broccoli, kale, bell peppers, or sweet potato',
+                  keys: ['spinach','kale','broccoli','cauliflower','carrot','tomato','cucumber','lettuce','celery','onion','garlic','pepper','zucchini','eggplant','asparagus','peas','corn','potato','sweet potato','beet','cabbage','brussels','arugula','mushroom','leek','scallion','bok choy','veggie','vegetable','greens','salad'] },
+    fruits:     { label: 'Fruits',           icon: '🍎', color: '#ef4444',
+                  rec: 'berries, bananas, oranges, apples, or mango',
+                  keys: ['apple','banana','orange','grape','strawberry','blueberry','raspberry','mango','pineapple','watermelon','peach','pear','cherry','kiwi','lemon','lime','avocado','pomegranate','melon','papaya','fruit','berries'] },
+    grains:     { label: 'Whole Grains',     icon: '🌾', color: '#f59e0b',
+                  rec: 'oats, brown rice, quinoa, or whole wheat bread',
+                  keys: ['rice','oats','oatmeal','quinoa','bread','pasta','tortilla','flour','cereal','granola','wheat','barley','buckwheat','farro','noodle','bagel','pita','wrap','cracker','grain'] },
+    dairy:      { label: 'Dairy / Calcium',  icon: '🥛', color: '#38bdf8',
+                  rec: 'milk, Greek yogurt, or cottage cheese',
+                  keys: ['milk','cheese','yogurt','butter','cream','mozzarella','cheddar','parmesan','feta','ricotta','sour cream','kefir','ghee','brie','gouda','cream cheese','dairy'] },
+    fats:       { label: 'Healthy Fats',     icon: '🫒', color: '#a78bfa',
+                  rec: 'olive oil, avocado, almonds, walnuts, or chia seeds',
+                  keys: ['olive oil','avocado','almond','walnut','cashew','peanut butter','almond butter','chia','flax','flaxseed','sunflower seed','pumpkin seed','sesame','tahini','coconut oil','nuts','seeds'] },
+  };
+
+  if (items.length === 0) {
+    return `<div class="empty-state"><div class="empty-state-icon">🥗</div><div class="empty-state-text">Add groceries to your list first.<br>The more items, the better the analysis.</div></div>`;
+  }
+
+  const names = items.map(i => i.name.toLowerCase());
+  const scores = {};
+  for (const [group, data] of Object.entries(GROUPS)) {
+    scores[group] = names.filter(n => data.keys.some(k => n.includes(k))).length;
+  }
+
+  const covered = Object.values(scores).filter(s => s > 0).length;
+  const pct = Math.round((covered / 6) * 100);
+  const scoreLabel = pct >= 83 ? 'Excellent' : pct >= 66 ? 'Good' : pct >= 50 ? 'Fair' : 'Needs Work';
+  const scoreColor = pct >= 83 ? 'var(--green)' : pct >= 66 ? 'var(--yellow)' : '#f97316';
+
+  let html = `
+    <div class="card" style="text-align:center;padding:20px 16px">
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Diet Balance Score</div>
+      <div style="font-size:52px;font-weight:800;color:${scoreColor};line-height:1">${pct}%</div>
+      <div style="font-size:14px;font-weight:600;color:${scoreColor};margin-top:6px">${scoreLabel}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">${covered} of 6 food groups · ${items.length} items analyzed</div>
+    </div>`;
+
+  html += `<div class="card"><div class="card-title">Food Group Coverage</div>`;
+  for (const [group, data] of Object.entries(GROUPS)) {
+    const s = scores[group];
+    const barPct = Math.min(100, s * 20);
+    const status = s === 0 ? 'Missing' : s < 3 ? 'Low' : 'Good';
+    const statusColor = s === 0 ? 'var(--red)' : s < 3 ? 'var(--yellow)' : 'var(--green)';
+    html += `
+      <div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+          <span style="font-size:13px;font-weight:600">${data.icon} ${data.label}</span>
+          <span style="font-size:11px;font-weight:600;color:${statusColor}">${status}${s > 0 ? ' · ' + s + (s === 1 ? ' item' : ' items') : ''}</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${barPct}%;background:${data.color}"></div></div>
+      </div>`;
+  }
+  html += '</div>';
+
+  const missing = Object.entries(GROUPS).filter(([g]) => scores[g] === 0);
+  const low = Object.entries(GROUPS).filter(([g]) => scores[g] > 0 && scores[g] < 3);
+
+  if (missing.length > 0 || low.length > 0) {
+    html += `<div class="card"><div class="card-title">Add to Your Next Shop</div>`;
+    missing.forEach(([g, data]) => {
+      html += `
+        <div style="margin-bottom:10px;padding:12px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:8px">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+            <span style="font-size:15px">${data.icon}</span>
+            <span style="font-size:13px;font-weight:600">${data.label}</span>
+            <span class="badge badge-red" style="margin-left:auto">Missing</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted)">Try: ${data.rec}</div>
+        </div>`;
+    });
+    low.forEach(([g, data]) => {
+      html += `
+        <div style="margin-bottom:10px;padding:12px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:8px">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+            <span style="font-size:15px">${data.icon}</span>
+            <span style="font-size:13px;font-weight:600">${data.label}</span>
+            <span class="badge badge-yellow" style="margin-left:auto">Low</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted)">Add variety: ${data.rec}</div>
+        </div>`;
+    });
+    html += '</div>';
+  } else {
+    html += `
+      <div class="card" style="text-align:center;padding:20px">
+        <div style="font-size:28px;margin-bottom:8px">🎯</div>
+        <div style="font-size:14px;font-weight:600;color:var(--green)">Well-balanced diet!</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">All major food groups are well represented.</div>
+      </div>`;
+  }
+
+  const tips = [
+    'Aim for at least 5 servings of vegetables and fruits per day.',
+    'Variety is key — rotate different colors of produce each week.',
+    'Whole grains have more fiber and nutrients than refined grains.',
+    'Lean protein at every meal helps maintain muscle and keeps you full.',
+    'Healthy fats from nuts and olive oil support brain and heart health.',
+    'Fermented dairy like yogurt and kefir supports gut microbiome health.',
+    'Drinking enough water helps nutrient absorption throughout the day.',
+  ];
+  const tip = tips[new Date().getDay() % tips.length];
+  html += `
+    <div style="padding:12px 14px;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;margin-bottom:12px">
+      <div style="font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px">Daily Tip</div>
+      <div style="font-size:12px;color:var(--text);line-height:1.6;font-style:italic">${tip}</div>
+    </div>`;
+
+  return html;
+}

@@ -2248,7 +2248,7 @@ async function saveGroceryItem() {
     await api('POST', 'grocery_items', '', { user_id: currentUserId, name, category });
     closeModal();
     showToast('Item added', 'success');
-    loadGrocery();
+    loadGrocery(true);
   } catch(e) {
     showToast(e.message, 'error');
   }

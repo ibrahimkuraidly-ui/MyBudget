@@ -2069,7 +2069,8 @@ async function loadGrocery() {
     let html = `<div style="padding-bottom:80px">
       <div class="type-toggle" style="margin-bottom:16px">
         <button onclick="setGroceryView('items')" class="${view === 'items' ? 'active-income' : ''}">All Items</button>
-        <button onclick="setGroceryView('shopping')" class="${view === 'shopping' ? 'active-income' : ''}">Shopping List</button>
+        <button onclick="setGroceryView('shopping')" class="${view === 'shopping' ? 'active-income' : ''}">Shopping</button>
+        <button onclick="setGroceryView('analysis')" class="${view === 'analysis' ? 'active-income' : ''}">Diet AI</button>
       </div>`;
     if (view === 'items') {
       if (items.length === 0) {
@@ -2089,7 +2090,7 @@ async function loadGrocery() {
         });
         html += '</div>';
       }
-    } else {
+    } else if (view === 'shopping') {
       const shopItems = items.filter(i => i.to_buy);
       if (shopItems.length === 0) {
         html += `<div class="empty-state"><div class="empty-state-icon">✓</div><div class="empty-state-text">Nothing on the list.<br>Go to All Items and tap the cart icon.</div></div>`;
@@ -2109,6 +2110,8 @@ async function loadGrocery() {
           html += `<button class="btn btn-secondary" style="width:100%;margin-top:12px" onclick="doneShopping()">Done Shopping (clear ${boughtCount})</button>`;
         }
       }
+    } else {
+      html += generateDietAnalysis(items);
     }
     html += '</div>';
     el.innerHTML = html;

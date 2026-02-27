@@ -2334,3 +2334,56 @@ function generateDietAnalysis(items) {
 
   return html;
 }
+
+async function seedGroceryItems() {
+  const COMMON = [
+    // Proteins
+    'Chicken breast', 'Ground beef', 'Eggs', 'Salmon', 'Canned tuna', 'Shrimp', 'Turkey breast',
+    'Lamb chops', 'Pork chops', 'Bacon', 'Hot dogs', 'Canned sardines',
+    // Vegetables
+    'Spinach', 'Broccoli', 'Carrots', 'Tomatoes', 'Onions', 'Garlic', 'Bell peppers',
+    'Cucumbers', 'Romaine lettuce', 'Russet potatoes', 'Sweet potatoes', 'Zucchini',
+    'Mushrooms', 'Celery', 'Kale', 'Cauliflower', 'Corn', 'Green beans', 'Asparagus',
+    'Eggplant', 'Cabbage', 'Brussels sprouts', 'Beets', 'Leeks', 'Scallions',
+    // Fruits
+    'Bananas', 'Apples', 'Oranges', 'Strawberries', 'Blueberries', 'Grapes',
+    'Lemons', 'Limes', 'Avocados', 'Mangoes', 'Watermelon', 'Peaches',
+    'Pears', 'Pineapple', 'Raspberries', 'Cherries', 'Kiwi',
+    // Grains & Bread
+    'White rice', 'Brown rice', 'Oats', 'Whole wheat bread', 'White bread',
+    'Pasta', 'Flour tortillas', 'Corn tortillas', 'Quinoa', 'Bagels',
+    // Dairy
+    'Whole milk', '2% milk', 'Butter', 'Cheddar cheese', 'Mozzarella',
+    'Greek yogurt', 'Sour cream', 'Cream cheese', 'Parmesan', 'Cottage cheese',
+    'Heavy cream', 'Shredded cheese',
+    // Fats & Nuts
+    'Olive oil', 'Vegetable oil', 'Peanut butter', 'Almond butter',
+    'Almonds', 'Walnuts', 'Cashews',
+    // Pantry
+    'Canned black beans', 'Canned chickpeas', 'Canned diced tomatoes',
+    'Chicken broth', 'Vegetable broth', 'Tomato paste', 'Tomato sauce',
+    'All-purpose flour', 'Sugar', 'Brown sugar', 'Honey',
+    'Soy sauce', 'Hot sauce', 'Ketchup', 'Mustard', 'Mayonnaise',
+    'Apple cider vinegar', 'Balsamic vinegar',
+    // Frozen
+    'Frozen peas', 'Frozen corn', 'Frozen mixed vegetables',
+  ];
+
+  try {
+    const existing = await api('GET', 'grocery_items', `user_id=eq.${currentUserId}&select=name`);
+    const existingNames = new Set(existing.map(i => i.name.toLowerCase()));
+    const toAdd = COMMON.filter(name => !existingNames.has(name.toLowerCase()));
+    if (toAdd.length === 0) {
+      showToast('All common items already in your list', 'info');
+      return;
+    }
+    showToast('Adding items…', 'info');
+    await Promise.all(toAdd.map(name =>
+      api('POST', 'grocery_items', '', { user_id: currentUserId, name })
+    ));
+    showToast(`Added ${toAdd.length} items`, 'success');
+    loadGrocery();
+  } catch(e) {
+    showToast(e.message, 'error');
+  }
+}

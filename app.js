@@ -1986,32 +1986,33 @@ async function deleteWorkout(id) {
 
 // ─── Health: Water ────────────────────────────────────────────────────────────
 
-async function loadWater() {
+async function loadWater(silent = false) {
   hideFab();
   const wFab = document.getElementById('workout-fab');
   if (wFab) wFab.style.display = 'none';
   const gFab = document.getElementById('grocery-fab');
   if (gFab) gFab.style.display = 'none';
   const el = document.getElementById('water-content');
-  el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+  if (!silent) el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   // Units stored as tenths-of-oz integers: glass=80 (8oz), bottle=169 (16.9oz), goal=640 (64oz)
   const GLASS = 80, BOTTLE = 169, GOAL = 640;
   try {
     const today = new Date().toLocaleDateString('en-CA');
     const logs = await api('GET', 'water_logs', `user_id=eq.${currentUserId}&date=eq.${today}&select=*`);
     const units = logs[0] ? logs[0].glasses : 0;
+    _waterCache = { id: logs[0] ? logs[0].id : null, units, date: today };
     const oz = (units / 10).toFixed(1);
     const fill = Math.min(100, Math.round((units / GOAL) * 100));
     const fillColor = fill >= 100 ? 'var(--green)' : '#38bdf8';
     el.innerHTML = `
       <div style="padding:20px 16px">
         <div style="text-align:center;padding:20px 0 24px">
-          <div style="font-size:64px;font-weight:800;color:#38bdf8;line-height:1">${oz}</div>
+          <div id="water-oz" style="font-size:64px;font-weight:800;color:#38bdf8;line-height:1">${oz}</div>
           <div style="font-size:15px;color:var(--muted);margin:6px 0 16px">of 64 oz today</div>
           <div class="progress-bar" style="max-width:280px;margin:0 auto 6px">
-            <div class="progress-fill" style="width:${fill}%;background:${fillColor}"></div>
+            <div id="water-prog-fill" class="progress-fill" style="width:${fill}%;background:${fillColor}"></div>
           </div>
-          <div style="font-size:11px;color:var(--muted)">${fill}% of daily goal</div>
+          <div id="water-prog-pct" style="font-size:11px;color:var(--muted)">${fill}% of daily goal</div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div class="card" style="text-align:center;padding:18px 12px">
@@ -2019,7 +2020,7 @@ async function loadWater() {
             <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px">Glass</div>
             <div style="font-size:12px;color:var(--muted);margin-bottom:14px">8 oz</div>
             <div style="display:flex;gap:8px;justify-content:center">
-              <button class="btn btn-secondary btn-sm" onclick="updateWater(-${GLASS})" ${units < GLASS ? 'disabled style="opacity:0.4"' : ''}>−</button>
+              <button id="water-minus-glass" class="btn btn-secondary btn-sm" onclick="updateWater(-${GLASS})" ${units < GLASS ? 'disabled style="opacity:0.4"' : ''}>−</button>
               <button class="btn btn-primary btn-sm" onclick="updateWater(${GLASS})">+ Add</button>
             </div>
           </div>
@@ -2028,7 +2029,7 @@ async function loadWater() {
             <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px">Bottle</div>
             <div style="font-size:12px;color:var(--muted);margin-bottom:14px">16.9 oz</div>
             <div style="display:flex;gap:8px;justify-content:center">
-              <button class="btn btn-secondary btn-sm" onclick="updateWater(-${BOTTLE})" ${units < BOTTLE ? 'disabled style="opacity:0.4"' : ''}>−</button>
+              <button id="water-minus-bottle" class="btn btn-secondary btn-sm" onclick="updateWater(-${BOTTLE})" ${units < BOTTLE ? 'disabled style="opacity:0.4"' : ''}>−</button>
               <button class="btn btn-primary btn-sm" onclick="updateWater(${BOTTLE})">+ Add</button>
             </div>
           </div>
@@ -2040,19 +2041,40 @@ async function loadWater() {
   }
 }
 
-async function updateWater(units) {
-  const today = new Date().toLocaleDateString('en-CA');
+function _applyWaterUnits(units) {
+  const GLASS = 80, BOTTLE = 169, GOAL = 640;
+  const oz = (units / 10).toFixed(1);
+  const fill = Math.min(100, Math.round((units / GOAL) * 100));
+  const fillColor = fill >= 100 ? 'var(--green)' : '#38bdf8';
+  const ozEl = document.getElementById('water-oz');
+  const fillEl = document.getElementById('water-prog-fill');
+  const pctEl = document.getElementById('water-prog-pct');
+  const minGlass = document.getElementById('water-minus-glass');
+  const minBottle = document.getElementById('water-minus-bottle');
+  if (ozEl) ozEl.textContent = oz;
+  if (fillEl) { fillEl.style.width = fill + '%'; fillEl.style.background = fillColor; }
+  if (pctEl) pctEl.textContent = fill + '% of daily goal';
+  if (minGlass) { minGlass.disabled = units < GLASS; minGlass.style.opacity = units < GLASS ? '0.4' : ''; }
+  if (minBottle) { minBottle.disabled = units < BOTTLE; minBottle.style.opacity = units < BOTTLE ? '0.4' : ''; }
+}
+
+async function updateWater(delta) {
+  if (!_waterCache) { await loadWater(); return; }
+  const prevUnits = _waterCache.units;
+  const newUnits = Math.max(0, prevUnits + delta);
+  _waterCache.units = newUnits;
+  _applyWaterUnits(newUnits);
   try {
-    const logs = await api('GET', 'water_logs', `user_id=eq.${currentUserId}&date=eq.${today}&select=*`);
-    const existing = logs[0];
-    const newUnits = Math.max(0, (existing ? existing.glasses : 0) + units);
-    if (existing) {
-      await api('PATCH', 'water_logs', `id=eq.${existing.id}`, { glasses: newUnits });
+    const today = new Date().toLocaleDateString('en-CA');
+    if (_waterCache.id) {
+      await api('PATCH', 'water_logs', `id=eq.${_waterCache.id}`, { glasses: newUnits });
     } else {
-      await api('POST', 'water_logs', '', { user_id: currentUserId, date: today, glasses: newUnits });
+      const created = await api('POST', 'water_logs', '', { user_id: currentUserId, date: today, glasses: newUnits });
+      if (created && created[0]) _waterCache.id = created[0].id;
     }
-    loadWater();
   } catch(e) {
+    _waterCache.units = prevUnits;
+    _applyWaterUnits(prevUnits);
     showToast(e.message, 'error');
   }
 }

@@ -1966,7 +1966,7 @@ async function saveWorkout() {
     await api('POST', 'workouts', '', { user_id: currentUserId, date, exercises });
     closeModal();
     showToast('Workout logged!', 'success');
-    loadWorkout();
+    loadWorkout(true);
   } catch(e) {
     showToast(e.message, 'error');
   }
@@ -1977,7 +1977,7 @@ async function deleteWorkout(id) {
   try {
     await api('DELETE', 'workouts', `id=eq.${id}`);
     showToast('Deleted', 'success');
-    loadWorkout();
+    loadWorkout(true);
   } catch(e) {
     showToast(e.message, 'error');
   }

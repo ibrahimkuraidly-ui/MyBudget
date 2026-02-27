@@ -1755,13 +1755,13 @@ function shiftWorkoutWeek(delta) {
   loadWorkout();
 }
 
-async function loadWorkout() {
+async function loadWorkout(silent = false) {
   hideFab();
   const gFab = document.getElementById('grocery-fab');
   if (gFab) gFab.style.display = 'none';
   if (!_workoutWeek) _workoutWeek = getWeekMonday(new Date());
   const el = document.getElementById('workout-content');
-  el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+  if (!silent) el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {
     const mon = new Date(_workoutWeek);
     const sun = new Date(mon); sun.setDate(sun.getDate() + 6);

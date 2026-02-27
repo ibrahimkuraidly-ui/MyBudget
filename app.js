@@ -1219,7 +1219,7 @@ async function loadPortfolio() {
         },
         options: {
           responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => _privacyMode ? '••••' : '$' + ctx.parsed.y.toLocaleString() } } },
           scales: {
             x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#2e3347' } },
             y: { ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => _privacyMode ? '••••' : '$' + v.toLocaleString() }, grid: { color: '#2e3347' } },

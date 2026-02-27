@@ -838,7 +838,7 @@ async function submitCardPayment(card) {
     await api('POST', 'transactions', '', { user_id: currentUserId, type: 'expense', amount, category: '__card_payment__', date, description: JSON.stringify({ d: 'Card Payment', pm: card }) });
     closeModal();
     showToast('Payment recorded', 'success');
-    loadDashboard();
+    loadDashboard(true);
   } catch (e) { showToast(e.message, 'error'); }
 }
 

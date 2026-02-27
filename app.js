@@ -2159,7 +2159,11 @@ async function loadGrocery() {
         }
       }
     } else {
-      html += generateDietAnalysis(items);
+      const since = new Date();
+      since.setDate(since.getDate() - 30);
+      const purchases = await api('GET', 'grocery_purchases', `user_id=eq.${currentUserId}&purchased_at=gte.${since.toISOString()}&order=purchased_at.desc&select=*`);
+      html += `<div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:12px">Based on ${purchases.length} item${purchases.length !== 1 ? 's' : ''} purchased in the last 30 days</div>`;
+      html += generateDietAnalysis(purchases);
     }
     html += '</div>';
     el.innerHTML = html;

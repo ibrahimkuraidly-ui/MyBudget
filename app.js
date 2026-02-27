@@ -693,10 +693,10 @@ async function loadDashboard(silent = false) {
 // ─── Transactions ─────────────────────────────────────────────────────────────
 
 
-async function loadTransactions() {
+async function loadTransactions(silent = false) {
   hideFab();
   const el = document.getElementById('txn-content');
-  el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+  if (!silent) el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {
     const [txns, allIncomeGoals] = await Promise.all([
       api('GET', 'transactions', `user_id=eq.${currentUserId}&${monthRange(_activeMonth)}&type=eq.expense&category=neq.__card_payment__&select=*&order=date.desc,created_at.desc`),

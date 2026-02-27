@@ -847,10 +847,10 @@ async function submitCardPayment(card) {
 const BUDGET_ITEMS = ['Rent','Groceries','Phone Bill','Electric Bill','Sara Allowance','Savings','Baba Allowance','Auto Insurance','Subscriptions'];
 
 
-async function loadBudget() {
+async function loadBudget(silent = false) {
   hideFab();
   const el = document.getElementById('budget-content');
-  el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+  if (!silent) el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {
     const [budgets, allIncomeGoals, transactions] = await Promise.all([
       api('GET', 'budgets',      `user_id=eq.${currentUserId}&month=eq.${_activeMonth}&category=neq.__income_goal__&select=*`),

@@ -1313,7 +1313,7 @@ async function submitSnapshot(accountId) {
   if (!balance || !date) { showToast('Fill in balance and date', 'error'); return; }
   try {
     await api('POST', 'investment_snapshots', '', { account_id: accountId, user_id: currentUserId, date, balance, contributions });
-    closeModal(); showToast('Balance logged', 'success'); loadPortfolio();
+    closeModal(); showToast('Balance logged', 'success'); loadPortfolio(true);
   } catch (e) { showToast(e.message, 'error'); }
 }
 
@@ -1322,7 +1322,7 @@ async function deleteAccount(id) {
   try {
     await api('DELETE', 'investment_snapshots', `account_id=eq.${id}`);
     await api('DELETE', 'investment_accounts',  `id=eq.${id}`);
-    showToast('Deleted', 'success'); loadPortfolio();
+    showToast('Deleted', 'success'); loadPortfolio(true);
   } catch (e) { showToast(e.message, 'error'); }
 }
 

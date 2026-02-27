@@ -1725,3 +1725,338 @@ function forceRefreshPicks() {
   localStorage.removeItem(GROQ_PICKS_KEY);
   loadPicks();
 }
+
+// ─── Health: Workout ─────────────────────────────────────────────────────────
+
+async function loadWorkout() {
+  hideFab();
+  const gFab = document.getElementById('grocery-fab');
+  if (gFab) gFab.style.display = 'none';
+  const el = document.getElementById('workout-content');
+  el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+  try {
+    const workouts = await api('GET', 'workouts', `user_id=eq.${currentUserId}&order=date.desc&limit=30&select=*`);
+    let html = '<div style="padding-bottom:80px">';
+    if (workouts.length === 0) {
+      html += `<div class="empty-state"><div class="empty-state-icon">💪</div><div class="empty-state-text">No workouts yet.<br>Tap + to log your first session.</div></div>`;
+    } else {
+      workouts.forEach(w => {
+        const exercises = w.exercises || [];
+        const exHtml = exercises.map(ex => {
+          const sets = (ex.sets || []).map(s => `${s.reps}×${s.weight}lb`).join(' · ');
+          return `<div style="margin-bottom:4px"><span style="font-size:13px;font-weight:600">${ex.name}</span> <span style="font-size:12px;color:var(--muted)">${sets}</span></div>`;
+        }).join('');
+        html += `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${exercises.length > 0 ? 10 : 0}px"><div style="font-size:15px;font-weight:700">${fmtDate(w.date)}</div><button class="btn btn-danger btn-sm" onclick="deleteWorkout('${w.id}')">Delete</button></div>${exercises.length > 0 ? exHtml : '<div style="color:var(--muted);font-size:13px">Rest day</div>'}</div>`;
+      });
+    }
+    html += '</div>';
+    el.innerHTML = html;
+    let fab = document.getElementById('workout-fab');
+    if (!fab) {
+      fab = document.createElement('button');
+      fab.id = 'workout-fab';
+      fab.className = 'fab';
+      fab.innerHTML = '+';
+      fab.onclick = openWorkoutModal;
+      document.body.appendChild(fab);
+    }
+    fab.style.display = '';
+  } catch(e) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-state-text">Error loading</div></div>`;
+    showToast(e.message, 'error');
+  }
+}
+
+function openWorkoutModal() {
+  const today = new Date().toLocaleDateString('en-CA');
+  document.getElementById('modal-root').innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-title">Log Workout</div>
+        <div class="field">
+          <label>Date</label>
+          <input type="date" id="wk-date" value="${today}">
+        </div>
+        <div id="wk-exercises"></div>
+        <button class="btn btn-secondary" style="width:100%;margin-top:4px" onclick="addWorkoutExercise()">+ Add Exercise</button>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="saveWorkout()">Save</button>
+        </div>
+      </div>
+    </div>`;
+  addWorkoutExercise();
+}
+
+function addWorkoutExercise() {
+  const container = document.getElementById('wk-exercises');
+  const div = document.createElement('div');
+  div.className = 'wk-exercise';
+  div.style.cssText = 'background:var(--bg-input);border-radius:10px;padding:12px;margin-bottom:10px;';
+  div.innerHTML = `
+    <div class="field" style="margin-bottom:10px">
+      <label>Exercise Name</label>
+      <input type="text" class="wk-name" placeholder="e.g. Bench Press">
+    </div>
+    <div class="wk-sets"></div>
+    <button class="btn btn-secondary btn-sm" style="margin-top:6px" onclick="addWorkoutSet(this)">+ Add Set</button>`;
+  container.appendChild(div);
+  addWorkoutSet(div.querySelector('button'));
+}
+
+function addWorkoutSet(btn) {
+  const setsDiv = btn.previousElementSibling;
+  const div = document.createElement('div');
+  div.style.cssText = 'display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:end;';
+  div.innerHTML = `
+    <div class="field" style="margin:0"><label>Reps</label><input type="number" class="wk-reps" placeholder="10" min="1"></div>
+    <div class="field" style="margin:0"><label>Weight (lb)</label><input type="number" class="wk-weight" placeholder="135" min="0"></div>
+    <button style="background:none;border:none;color:var(--red);cursor:pointer;font-size:22px;padding-bottom:10px" onclick="this.parentElement.remove()">×</button>`;
+  setsDiv.appendChild(div);
+}
+
+async function saveWorkout() {
+  const date = document.getElementById('wk-date').value;
+  if (!date) { showToast('Pick a date', 'error'); return; }
+  const exercises = [];
+  document.querySelectorAll('.wk-exercise').forEach(exEl => {
+    const name = exEl.querySelector('.wk-name').value.trim();
+    if (!name) return;
+    const sets = [];
+    const repsInputs = exEl.querySelectorAll('.wk-reps');
+    const weightInputs = exEl.querySelectorAll('.wk-weight');
+    repsInputs.forEach((inp, i) => {
+      const reps = parseInt(inp.value) || 0;
+      const weight = parseFloat(weightInputs[i].value) || 0;
+      if (reps > 0) sets.push({ reps, weight });
+    });
+    exercises.push({ name, sets });
+  });
+  try {
+    await api('POST', 'workouts', '', { user_id: currentUserId, date, exercises });
+    closeModal();
+    showToast('Workout logged!', 'success');
+    loadWorkout();
+  } catch(e) {
+    showToast(e.message, 'error');
+  }
+}
+
+async function deleteWorkout(id) {
+  if (!confirm('Delete this workout?')) return;
+  try {
+    await api('DELETE', 'workouts', `id=eq.${id}`);
+    showToast('Deleted', 'success');
+    loadWorkout();
+  } catch(e) {
+    showToast(e.message, 'error');
+  }
+}
+
+// ─── Health: Water ────────────────────────────────────────────────────────────
+
+async function loadWater() {
+  hideFab();
+  const wFab = document.getElementById('workout-fab');
+  if (wFab) wFab.style.display = 'none';
+  const gFab = document.getElementById('grocery-fab');
+  if (gFab) gFab.style.display = 'none';
+  const el = document.getElementById('water-content');
+  el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+  try {
+    const today = new Date().toLocaleDateString('en-CA');
+    const logs = await api('GET', 'water_logs', `user_id=eq.${currentUserId}&log_date=eq.${today}&select=*`);
+    const glasses = logs[0] ? logs[0].glasses : 0;
+    const goal = 8;
+    const fill = Math.min(100, Math.round((glasses / goal) * 100));
+    const glassIcons = Array.from({length: goal}, (_, i) =>
+      `<span style="font-size:26px;opacity:${i < glasses ? 1 : 0.2}">💧</span>`
+    ).join('');
+    el.innerHTML = `
+      <div style="text-align:center;padding:32px 16px 16px">
+        <div style="font-size:72px;font-weight:800;color:var(--accent);line-height:1">${glasses}</div>
+        <div style="font-size:15px;color:var(--muted);margin:6px 0 20px">of ${goal} glasses today</div>
+        <div style="margin-bottom:16px">${glassIcons}</div>
+        <div class="progress-bar" style="max-width:260px;margin:0 auto 28px">
+          <div class="progress-fill safe" style="width:${fill}%;background:#38bdf8"></div>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:center">
+          <button class="btn btn-secondary" onclick="updateWater(-1)" ${glasses <= 0 ? 'disabled style="opacity:0.4"' : ''} style="font-size:22px;padding:12px 28px">−</button>
+          <button class="btn btn-primary" onclick="updateWater(1)" style="font-size:18px;padding:12px 32px">+ Glass</button>
+        </div>
+      </div>`;
+  } catch(e) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-state-text">Error loading</div></div>`;
+    showToast(e.message, 'error');
+  }
+}
+
+async function updateWater(delta) {
+  const today = new Date().toLocaleDateString('en-CA');
+  try {
+    const logs = await api('GET', 'water_logs', `user_id=eq.${currentUserId}&log_date=eq.${today}&select=*`);
+    const existing = logs[0];
+    const newGlasses = Math.max(0, (existing ? existing.glasses : 0) + delta);
+    if (existing) {
+      await api('PATCH', 'water_logs', `id=eq.${existing.id}`, { glasses: newGlasses });
+    } else {
+      await api('POST', 'water_logs', '', { user_id: currentUserId, log_date: today, glasses: newGlasses });
+    }
+    loadWater();
+  } catch(e) {
+    showToast(e.message, 'error');
+  }
+}
+
+// ─── Health: Grocery ─────────────────────────────────────────────────────────
+
+async function loadGrocery() {
+  hideFab();
+  const wFab = document.getElementById('workout-fab');
+  if (wFab) wFab.style.display = 'none';
+  const el = document.getElementById('grocery-content');
+  el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+  const view = localStorage.getItem('helm-grocery-view') || 'items';
+  try {
+    const items = await api('GET', 'grocery_items', `user_id=eq.${currentUserId}&order=created_at.asc&select=*`);
+    let html = `<div style="padding-bottom:80px">
+      <div class="type-toggle" style="margin-bottom:16px">
+        <button onclick="setGroceryView('items')" class="${view === 'items' ? 'active-income' : ''}">All Items</button>
+        <button onclick="setGroceryView('shopping')" class="${view === 'shopping' ? 'active-income' : ''}">Shopping List</button>
+      </div>`;
+    if (view === 'items') {
+      if (items.length === 0) {
+        html += `<div class="empty-state"><div class="empty-state-icon">🛒</div><div class="empty-state-text">No items yet.<br>Tap + to add groceries.</div></div>`;
+      } else {
+        html += '<div class="card">';
+        items.forEach(item => {
+          html += `<div class="list-item">
+            <div class="list-item-left"><div class="list-item-title">${item.name}</div></div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button onclick="toggleGroceryToBuy('${item.id}',${item.to_buy})" style="background:none;border:none;cursor:pointer;padding:4px;display:flex">
+                <svg viewBox="0 0 24 24" width="22" height="22" stroke="${item.to_buy ? '#22c55e' : 'var(--muted)'}" fill="${item.to_buy ? 'rgba(34,197,94,0.15)' : 'none'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+              </button>
+              <button onclick="deleteGroceryItem('${item.id}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:20px;padding:4px;line-height:1">×</button>
+            </div>
+          </div>`;
+        });
+        html += '</div>';
+      }
+    } else {
+      const shopItems = items.filter(i => i.to_buy);
+      if (shopItems.length === 0) {
+        html += `<div class="empty-state"><div class="empty-state-icon">✓</div><div class="empty-state-text">Nothing on the list.<br>Go to All Items and tap the cart icon.</div></div>`;
+      } else {
+        html += '<div class="card">';
+        shopItems.forEach(item => {
+          html += `<div class="list-item" onclick="toggleGroceryBought('${item.id}',${item.bought})" style="cursor:pointer">
+            <div class="list-item-left"><div class="list-item-title" style="${item.bought ? 'text-decoration:line-through;color:var(--muted)' : ''}">${item.name}</div></div>
+            <div style="width:24px;height:24px;border-radius:6px;border:2px solid ${item.bought ? 'var(--green)' : 'var(--border)'};background:${item.bought ? 'var(--green)' : 'none'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              ${item.bought ? '<svg viewBox="0 0 24 24" width="14" height="14" stroke="#0f1117" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+            </div>
+          </div>`;
+        });
+        html += '</div>';
+        const boughtCount = shopItems.filter(i => i.bought).length;
+        if (boughtCount > 0) {
+          html += `<button class="btn btn-secondary" style="width:100%;margin-top:12px" onclick="doneShopping()">Done Shopping (clear ${boughtCount})</button>`;
+        }
+      }
+    }
+    html += '</div>';
+    el.innerHTML = html;
+    let gFab = document.getElementById('grocery-fab');
+    if (view === 'items') {
+      if (!gFab) {
+        gFab = document.createElement('button');
+        gFab.id = 'grocery-fab';
+        gFab.className = 'fab';
+        gFab.innerHTML = '+';
+        gFab.onclick = openAddGroceryItem;
+        document.body.appendChild(gFab);
+      }
+      gFab.style.display = '';
+    } else {
+      if (gFab) gFab.style.display = 'none';
+    }
+  } catch(e) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-state-text">Error loading</div></div>`;
+    showToast(e.message, 'error');
+  }
+}
+
+function setGroceryView(view) {
+  localStorage.setItem('helm-grocery-view', view);
+  loadGrocery();
+}
+
+function openAddGroceryItem() {
+  document.getElementById('modal-root').innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-title">Add Item</div>
+        <div class="field">
+          <label>Item Name</label>
+          <input type="text" id="grocery-name" placeholder="e.g. Milk">
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="saveGroceryItem()">Add</button>
+        </div>
+      </div>
+    </div>`;
+  setTimeout(() => document.getElementById('grocery-name')?.focus(), 100);
+}
+
+async function saveGroceryItem() {
+  const name = document.getElementById('grocery-name').value.trim();
+  if (!name) { showToast('Enter an item name', 'error'); return; }
+  try {
+    await api('POST', 'grocery_items', '', { user_id: currentUserId, name });
+    closeModal();
+    showToast('Item added', 'success');
+    loadGrocery();
+  } catch(e) {
+    showToast(e.message, 'error');
+  }
+}
+
+async function toggleGroceryToBuy(id, current) {
+  try {
+    await api('PATCH', 'grocery_items', `id=eq.${id}`, { to_buy: !current });
+    loadGrocery();
+  } catch(e) {
+    showToast(e.message, 'error');
+  }
+}
+
+async function toggleGroceryBought(id, current) {
+  try {
+    await api('PATCH', 'grocery_items', `id=eq.${id}`, { bought: !current });
+    loadGrocery();
+  } catch(e) {
+    showToast(e.message, 'error');
+  }
+}
+
+async function deleteGroceryItem(id) {
+  try {
+    await api('DELETE', 'grocery_items', `id=eq.${id}`);
+    loadGrocery();
+  } catch(e) {
+    showToast(e.message, 'error');
+  }
+}
+
+async function doneShopping() {
+  try {
+    const bought = await api('GET', 'grocery_items', `user_id=eq.${currentUserId}&bought=eq.true&select=id`);
+    await Promise.all(bought.map(item =>
+      api('PATCH', 'grocery_items', `id=eq.${item.id}`, { bought: false, to_buy: false })
+    ));
+    showToast('Shopping done!', 'success');
+    loadGrocery();
+  } catch(e) {
+    showToast(e.message, 'error');
+  }
+}

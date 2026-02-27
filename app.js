@@ -2074,7 +2074,12 @@ async function loadGrocery() {
       </div>`;
     if (view === 'items') {
       if (items.length === 0) {
-        html += `<div class="empty-state"><div class="empty-state-icon">🛒</div><div class="empty-state-text">No items yet.<br>Tap + to add groceries.</div></div>`;
+        html += `
+          <div class="empty-state">
+            <div class="empty-state-icon">🛒</div>
+            <div class="empty-state-text">No items yet.<br>Tap + to add groceries.</div>
+            <button class="btn btn-secondary" style="margin-top:16px" onclick="seedGroceryItems()">Populate common items</button>
+          </div>`;
       } else {
         html += '<div class="card">';
         items.forEach(item => {
@@ -2089,6 +2094,7 @@ async function loadGrocery() {
           </div>`;
         });
         html += '</div>';
+        html += `<button class="btn btn-secondary" style="width:100%;margin-top:10px;font-size:12px" onclick="seedGroceryItems()">+ Add missing common items</button>`;
       }
     } else if (view === 'shopping') {
       const shopItems = items.filter(i => i.to_buy);

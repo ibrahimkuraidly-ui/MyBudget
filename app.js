@@ -1222,7 +1222,7 @@ async function loadPortfolio() {
           plugins: { legend: { display: false } },
           scales: {
             x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#2e3347' } },
-            y: { ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => '$' + v.toLocaleString() }, grid: { color: '#2e3347' } },
+            y: { ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => _privacyMode ? '••••' : '$' + v.toLocaleString() }, grid: { color: '#2e3347' } },
           }
         }
       });

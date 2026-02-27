@@ -796,7 +796,7 @@ async function submitTxn() {
     }
     closeModal();
     showToast('Expense added', 'success');
-    loadDashboard();
+    loadDashboard(true);
   } catch (e) { showToast(e.message, 'error'); }
 }
 
@@ -805,7 +805,7 @@ async function deleteTxn(id) {
   try {
     await api('DELETE', 'transactions', `id=eq.${id}`);
     showToast('Deleted', 'success');
-    loadTransactions();
+    loadTransactions(true);
   } catch (e) { showToast(e.message, 'error'); }
 }
 

@@ -2395,49 +2395,123 @@ function generateDietAnalysis(items) {
 
 async function seedGroceryItems() {
   const COMMON = [
-    // Proteins
-    'Chicken breast', 'Ground beef', 'Eggs', 'Salmon', 'Canned tuna', 'Shrimp', 'Turkey breast',
-    'Lamb chops', 'Pork chops', 'Bacon', 'Hot dogs', 'Canned sardines',
-    // Vegetables
-    'Spinach', 'Broccoli', 'Carrots', 'Tomatoes', 'Onions', 'Garlic', 'Bell peppers',
-    'Cucumbers', 'Romaine lettuce', 'Russet potatoes', 'Sweet potatoes', 'Zucchini',
-    'Mushrooms', 'Celery', 'Kale', 'Cauliflower', 'Corn', 'Green beans', 'Asparagus',
-    'Eggplant', 'Cabbage', 'Brussels sprouts', 'Beets', 'Leeks', 'Scallions',
-    // Fruits
-    'Bananas', 'Apples', 'Oranges', 'Strawberries', 'Blueberries', 'Grapes',
-    'Lemons', 'Limes', 'Avocados', 'Mangoes', 'Watermelon', 'Peaches',
-    'Pears', 'Pineapple', 'Raspberries', 'Cherries', 'Kiwi',
-    // Grains & Bread
-    'White rice', 'Brown rice', 'Oats', 'Whole wheat bread', 'White bread',
-    'Pasta', 'Flour tortillas', 'Corn tortillas', 'Quinoa', 'Bagels',
-    // Dairy
-    'Whole milk', '2% milk', 'Butter', 'Cheddar cheese', 'Mozzarella',
-    'Greek yogurt', 'Sour cream', 'Cream cheese', 'Parmesan', 'Cottage cheese',
-    'Heavy cream', 'Shredded cheese',
-    // Fats & Nuts
-    'Olive oil', 'Vegetable oil', 'Peanut butter', 'Almond butter',
-    'Almonds', 'Walnuts', 'Cashews',
-    // Pantry
-    'Canned black beans', 'Canned chickpeas', 'Canned diced tomatoes',
-    'Chicken broth', 'Vegetable broth', 'Tomato paste', 'Tomato sauce',
-    'All-purpose flour', 'Sugar', 'Brown sugar', 'Honey',
-    'Soy sauce', 'Hot sauce', 'Ketchup', 'Mustard', 'Mayonnaise',
-    'Apple cider vinegar', 'Balsamic vinegar',
-    // Frozen
-    'Frozen peas', 'Frozen corn', 'Frozen mixed vegetables',
+    { name: 'Chicken breast',           category: 'Protein' },
+    { name: 'Ground beef',              category: 'Protein' },
+    { name: 'Eggs',                     category: 'Protein' },
+    { name: 'Salmon',                   category: 'Protein' },
+    { name: 'Canned tuna',              category: 'Protein' },
+    { name: 'Shrimp',                   category: 'Protein' },
+    { name: 'Turkey breast',            category: 'Protein' },
+    { name: 'Lamb chops',               category: 'Protein' },
+    { name: 'Pork chops',               category: 'Protein' },
+    { name: 'Bacon',                    category: 'Protein' },
+    { name: 'Hot dogs',                 category: 'Protein' },
+    { name: 'Canned sardines',          category: 'Protein' },
+    { name: 'Spinach',                  category: 'Vegetables' },
+    { name: 'Broccoli',                 category: 'Vegetables' },
+    { name: 'Carrots',                  category: 'Vegetables' },
+    { name: 'Tomatoes',                 category: 'Vegetables' },
+    { name: 'Onions',                   category: 'Vegetables' },
+    { name: 'Garlic',                   category: 'Vegetables' },
+    { name: 'Bell peppers',             category: 'Vegetables' },
+    { name: 'Cucumbers',                category: 'Vegetables' },
+    { name: 'Romaine lettuce',          category: 'Vegetables' },
+    { name: 'Russet potatoes',          category: 'Vegetables' },
+    { name: 'Sweet potatoes',           category: 'Vegetables' },
+    { name: 'Zucchini',                 category: 'Vegetables' },
+    { name: 'Mushrooms',                category: 'Vegetables' },
+    { name: 'Celery',                   category: 'Vegetables' },
+    { name: 'Kale',                     category: 'Vegetables' },
+    { name: 'Cauliflower',              category: 'Vegetables' },
+    { name: 'Corn',                     category: 'Vegetables' },
+    { name: 'Green beans',              category: 'Vegetables' },
+    { name: 'Asparagus',                category: 'Vegetables' },
+    { name: 'Eggplant',                 category: 'Vegetables' },
+    { name: 'Cabbage',                  category: 'Vegetables' },
+    { name: 'Brussels sprouts',         category: 'Vegetables' },
+    { name: 'Beets',                    category: 'Vegetables' },
+    { name: 'Leeks',                    category: 'Vegetables' },
+    { name: 'Scallions',                category: 'Vegetables' },
+    { name: 'Bananas',                  category: 'Fruits' },
+    { name: 'Apples',                   category: 'Fruits' },
+    { name: 'Oranges',                  category: 'Fruits' },
+    { name: 'Strawberries',             category: 'Fruits' },
+    { name: 'Blueberries',              category: 'Fruits' },
+    { name: 'Grapes',                   category: 'Fruits' },
+    { name: 'Lemons',                   category: 'Fruits' },
+    { name: 'Limes',                    category: 'Fruits' },
+    { name: 'Avocados',                 category: 'Fruits' },
+    { name: 'Mangoes',                  category: 'Fruits' },
+    { name: 'Watermelon',               category: 'Fruits' },
+    { name: 'Peaches',                  category: 'Fruits' },
+    { name: 'Pears',                    category: 'Fruits' },
+    { name: 'Pineapple',                category: 'Fruits' },
+    { name: 'Raspberries',              category: 'Fruits' },
+    { name: 'Cherries',                 category: 'Fruits' },
+    { name: 'Kiwi',                     category: 'Fruits' },
+    { name: 'White rice',               category: 'Grains & Bread' },
+    { name: 'Brown rice',               category: 'Grains & Bread' },
+    { name: 'Oats',                     category: 'Grains & Bread' },
+    { name: 'Whole wheat bread',        category: 'Grains & Bread' },
+    { name: 'White bread',              category: 'Grains & Bread' },
+    { name: 'Pasta',                    category: 'Grains & Bread' },
+    { name: 'Flour tortillas',          category: 'Grains & Bread' },
+    { name: 'Corn tortillas',           category: 'Grains & Bread' },
+    { name: 'Quinoa',                   category: 'Grains & Bread' },
+    { name: 'Bagels',                   category: 'Grains & Bread' },
+    { name: 'Whole milk',               category: 'Dairy' },
+    { name: '2% milk',                  category: 'Dairy' },
+    { name: 'Butter',                   category: 'Dairy' },
+    { name: 'Cheddar cheese',           category: 'Dairy' },
+    { name: 'Mozzarella',               category: 'Dairy' },
+    { name: 'Greek yogurt',             category: 'Dairy' },
+    { name: 'Sour cream',               category: 'Dairy' },
+    { name: 'Cream cheese',             category: 'Dairy' },
+    { name: 'Parmesan',                 category: 'Dairy' },
+    { name: 'Cottage cheese',           category: 'Dairy' },
+    { name: 'Heavy cream',              category: 'Dairy' },
+    { name: 'Shredded cheese',          category: 'Dairy' },
+    { name: 'Olive oil',                category: 'Fats & Nuts' },
+    { name: 'Vegetable oil',            category: 'Fats & Nuts' },
+    { name: 'Peanut butter',            category: 'Fats & Nuts' },
+    { name: 'Almond butter',            category: 'Fats & Nuts' },
+    { name: 'Almonds',                  category: 'Fats & Nuts' },
+    { name: 'Walnuts',                  category: 'Fats & Nuts' },
+    { name: 'Cashews',                  category: 'Fats & Nuts' },
+    { name: 'Canned black beans',       category: 'Pantry' },
+    { name: 'Canned chickpeas',         category: 'Pantry' },
+    { name: 'Canned diced tomatoes',    category: 'Pantry' },
+    { name: 'Chicken broth',            category: 'Pantry' },
+    { name: 'Vegetable broth',          category: 'Pantry' },
+    { name: 'Tomato paste',             category: 'Pantry' },
+    { name: 'Tomato sauce',             category: 'Pantry' },
+    { name: 'All-purpose flour',        category: 'Pantry' },
+    { name: 'Sugar',                    category: 'Pantry' },
+    { name: 'Brown sugar',              category: 'Pantry' },
+    { name: 'Honey',                    category: 'Pantry' },
+    { name: 'Soy sauce',                category: 'Pantry' },
+    { name: 'Hot sauce',                category: 'Pantry' },
+    { name: 'Ketchup',                  category: 'Pantry' },
+    { name: 'Mustard',                  category: 'Pantry' },
+    { name: 'Mayonnaise',               category: 'Pantry' },
+    { name: 'Apple cider vinegar',      category: 'Pantry' },
+    { name: 'Balsamic vinegar',         category: 'Pantry' },
+    { name: 'Frozen peas',              category: 'Frozen' },
+    { name: 'Frozen corn',              category: 'Frozen' },
+    { name: 'Frozen mixed vegetables',  category: 'Frozen' },
   ];
 
   try {
     const existing = await api('GET', 'grocery_items', `user_id=eq.${currentUserId}&select=name`);
     const existingNames = new Set(existing.map(i => i.name.toLowerCase()));
-    const toAdd = COMMON.filter(name => !existingNames.has(name.toLowerCase()));
+    const toAdd = COMMON.filter(({ name }) => !existingNames.has(name.toLowerCase()));
     if (toAdd.length === 0) {
       showToast('All common items already in your list', 'info');
       return;
     }
     showToast('Adding items…', 'info');
-    await Promise.all(toAdd.map(name =>
-      api('POST', 'grocery_items', '', { user_id: currentUserId, name })
+    await Promise.all(toAdd.map(({ name, category }) =>
+      api('POST', 'grocery_items', '', { user_id: currentUserId, name, category })
     ));
     showToast(`Added ${toAdd.length} items`, 'success');
     loadGrocery();

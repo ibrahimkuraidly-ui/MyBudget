@@ -2029,7 +2029,7 @@ async function updateWater(delta) {
     if (existing) {
       await api('PATCH', 'water_logs', `id=eq.${existing.id}`, { glasses: newGlasses });
     } else {
-      await api('POST', 'water_logs', '', { user_id: currentUserId, log_date: today, glasses: newGlasses });
+      await api('POST', 'water_logs', '', { user_id: currentUserId, date: today, glasses: newGlasses });
     }
     loadWater();
   } catch(e) {

@@ -2310,7 +2310,7 @@ async function toggleGroceryBought(id, current, name, category) {
 async function deleteGroceryItem(id) {
   try {
     await api('DELETE', 'grocery_items', `id=eq.${id}`);
-    loadGrocery();
+    loadGrocery(true);
   } catch(e) {
     showToast(e.message, 'error');
   }

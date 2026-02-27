@@ -2111,6 +2111,8 @@ async function loadGrocery() {
           if (!grouped[cat]) grouped[cat] = [];
           grouped[cat].push(item);
         });
+        // Default to collapsed
+        CAT_ORDER.forEach(c => { if (_groceryCollapsed[c] === undefined) _groceryCollapsed[c] = true; });
         CAT_ORDER.filter(cat => grouped[cat].length > 0).forEach(cat => {
           const catId = cat.replace(/[^a-zA-Z0-9]/g, '_');
           const collapsed = !!_groceryCollapsed[cat];

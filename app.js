@@ -1098,7 +1098,7 @@ async function submitDeposit(id, current) {
   if (!deposit) { showToast('Enter an amount', 'error'); return; }
   try {
     await api('PATCH', 'savings_goals', `id=eq.${id}`, { current_amount: current + deposit });
-    closeModal(); showToast('Deposit added', 'success'); loadSavings();
+    closeModal(); showToast('Deposit added', 'success'); loadSavings(true);
   } catch (e) { showToast(e.message, 'error'); }
 }
 
@@ -1106,7 +1106,7 @@ async function deleteGoal(id) {
   if (!confirm('Delete this savings goal?')) return;
   try {
     await api('DELETE', 'savings_goals', `id=eq.${id}`);
-    showToast('Deleted', 'success'); loadSavings();
+    showToast('Deleted', 'success'); loadSavings(true);
   } catch (e) { showToast(e.message, 'error'); }
 }
 

@@ -986,10 +986,10 @@ async function submitEditBudget(id) {
 
 // ─── Savings ─────────────────────────────────────────────────────────────────
 
-async function loadSavings() {
+async function loadSavings(silent = false) {
   hideFab();
   const el = document.getElementById('savings-content');
-  el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+  if (!silent) el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {
     const goals = await api('GET', 'savings_goals', `user_id=eq.${currentUserId}&select=*&order=created_at`);
     const totalSaved  = goals.reduce((s, g) => s + parseFloat(g.current_amount || 0), 0);

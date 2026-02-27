@@ -508,10 +508,10 @@ function loadPage(tab) {
 
 let _activeMonth = currMonth();
 
-async function loadDashboard() {
+async function loadDashboard(silent = false) {
   showFab();
   const el = document.getElementById('dash-content');
-  el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+  if (!silent) el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {
     const mr = monthRange(_activeMonth);
     const [txns, budgets, goals, snapshots, allIncomeGoals, allCardTxns] = await Promise.all([

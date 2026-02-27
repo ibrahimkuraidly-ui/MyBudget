@@ -1732,6 +1732,13 @@ function forceRefreshPicks() {
 const WK_COLORS = { weights: '#f97316', cardio: '#38bdf8', pushups: '#22c55e' };
 const WK_LABELS = { weights: 'Weights', cardio: 'Cardio', pushups: 'Push-ups' };
 
+function wkCircleBg(types) {
+  if (types.length === 0) return 'transparent';
+  if (types.length === 1) return WK_COLORS[types[0]];
+  const seg = 100 / types.length;
+  return `conic-gradient(${types.map((t,i) => `${WK_COLORS[t]} ${i*seg}% ${(i+1)*seg}%`).join(',')})`;
+}
+
 function getWeekMonday(d) {
   const date = new Date(d);
   const day = date.getDay();

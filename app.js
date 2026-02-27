@@ -1729,38 +1729,114 @@ function forceRefreshPicks() {
 
 // ─── Health: Workout ─────────────────────────────────────────────────────────
 
+const WK_COLORS = { weights: '#f97316', cardio: '#38bdf8', pushups: '#22c55e' };
+const WK_LABELS = { weights: 'Weights', cardio: 'Cardio', pushups: 'Push-ups' };
+
+function getWeekMonday(d) {
+  const date = new Date(d);
+  const day = date.getDay();
+  date.setDate(date.getDate() - (day === 0 ? 6 : day - 1));
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function shiftWorkoutWeek(delta) {
+  if (!_workoutWeek) _workoutWeek = getWeekMonday(new Date());
+  _workoutWeek = new Date(_workoutWeek);
+  _workoutWeek.setDate(_workoutWeek.getDate() + delta * 7);
+  loadWorkout();
+}
+
 async function loadWorkout() {
   hideFab();
   const gFab = document.getElementById('grocery-fab');
   if (gFab) gFab.style.display = 'none';
+  if (!_workoutWeek) _workoutWeek = getWeekMonday(new Date());
   const el = document.getElementById('workout-content');
   el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {
-    const workouts = await api('GET', 'workouts', `user_id=eq.${currentUserId}&order=date.desc&limit=30&select=*`);
-    let html = '<div style="padding-bottom:80px">';
-    if (workouts.length === 0) {
-      html += `<div class="empty-state"><div class="empty-state-icon">💪</div><div class="empty-state-text">No workouts yet.<br>Tap + to log your first session.</div></div>`;
-    } else {
-      workouts.forEach(w => {
-        const exercises = w.exercises || [];
-        const exHtml = exercises.map(ex => {
-          const sets = (ex.sets || []).map(s => `${s.reps}×${s.weight}lb`).join(' · ');
-          return `<div style="margin-bottom:4px"><span style="font-size:13px;font-weight:600">${ex.name}</span> <span style="font-size:12px;color:var(--muted)">${sets}</span></div>`;
-        }).join('');
-        html += `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${exercises.length > 0 ? 10 : 0}px"><div style="font-size:15px;font-weight:700">${fmtDate(w.date)}</div><button class="btn btn-danger btn-sm" onclick="deleteWorkout('${w.id}')">Delete</button></div>${exercises.length > 0 ? exHtml : '<div style="color:var(--muted);font-size:13px">Rest day</div>'}</div>`;
-      });
+    const mon = new Date(_workoutWeek);
+    const sun = new Date(mon); sun.setDate(sun.getDate() + 6);
+    const monStr = mon.toLocaleDateString('en-CA');
+    const sunStr = sun.toLocaleDateString('en-CA');
+    const today = new Date().toLocaleDateString('en-CA');
+
+    const workouts = await api('GET', 'workouts', `user_id=eq.${currentUserId}&date=gte.${monStr}&date=lte.${sunStr}&order=date.asc&select=*`);
+    const byDate = {};
+    workouts.forEach(w => {
+      if (!byDate[w.date]) byDate[w.date] = [];
+      byDate[w.date].push(w);
+    });
+
+    const weekLabel = `${mon.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${sun.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+    const dayLetters = ['M','T','W','T','F','S','S'];
+    let dayCircles = '';
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(mon); d.setDate(d.getDate() + i);
+      const dStr = d.toLocaleDateString('en-CA');
+      const isToday = dStr === today;
+      const dayWorkouts = byDate[dStr] || [];
+      const firstType = dayWorkouts.length > 0 ? (dayWorkouts[0].exercises?.type || 'weights') : null;
+      const color = firstType ? WK_COLORS[firstType] : null;
+      dayCircles += `<div onclick="openWorkoutModal('${dStr}')" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;-webkit-tap-highlight-color:transparent">
+        <div style="font-size:10px;color:var(--muted);font-weight:600">${dayLetters[i]}</div>
+        <div style="width:36px;height:36px;border-radius:50%;background:${color||'transparent'};border:2px solid ${isToday?'var(--accent)':(color||'var(--border)')};display:flex;align-items:center;justify-content:center;box-shadow:${color?'0 0 8px '+color+'55':'none'}">
+          ${color?`<svg viewBox="0 0 24 24" width="16" height="16" stroke="#fff" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`:(isToday?`<div style="width:6px;height:6px;border-radius:50%;background:var(--accent)"></div>`:'')}
+        </div>
+        <div style="font-size:10px;color:${isToday?'var(--accent)':'var(--muted)'}">${d.getDate()}</div>
+      </div>`;
     }
-    html += '</div>';
-    el.innerHTML = html;
+
+    const legend = Object.entries(WK_COLORS).map(([t,c]) =>
+      `<span style="font-size:11px;color:${c};margin-right:10px">● ${WK_LABELS[t]}</span>`
+    ).join('');
+
+    let cards = '';
+    workouts.forEach(w => {
+      const data = w.exercises || {};
+      const type = data.type || 'weights';
+      const color = WK_COLORS[type]; const label = WK_LABELS[type];
+      let detail = '';
+      if (type === 'weights') {
+        const exs = data.exercises || (Array.isArray(data) ? data : []);
+        detail = exs.map(ex => {
+          const sets = (ex.sets||[]).map(s=>`${s.reps}×${s.weight}lb`).join(' · ');
+          return `<div style="margin-bottom:3px"><span style="font-size:13px;font-weight:600">${ex.name}</span> <span style="font-size:12px;color:var(--muted)">${sets}</span></div>`;
+        }).join('');
+      } else if (type === 'cardio') {
+        detail = `<span style="font-size:13px;color:var(--muted)">${data.activity} — ${data.duration} ${data.unit==='reps'?'reps':'min'}</span>`;
+      } else if (type === 'pushups') {
+        detail = `<span style="font-size:13px;color:var(--muted)">${data.count} push-ups</span>`;
+      }
+      const dateObj = new Date(w.date+'T12:00:00');
+      const dayName = dateObj.toLocaleDateString('en-US',{weekday:'short'});
+      const dateLabel = dateObj.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      cards += `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${detail?10:0}px"><div><span style="font-size:15px;font-weight:700">${dayName}, ${dateLabel}</span><span style="font-size:11px;font-weight:600;color:${color};background:${color}22;padding:2px 8px;border-radius:10px;margin-left:6px">${label}</span></div><button class="btn btn-danger btn-sm" onclick="deleteWorkout('${w.id}')">Delete</button></div>${detail}</div>`;
+    });
+
+    el.innerHTML = `<div style="padding-bottom:80px">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <button onclick="shiftWorkoutWeek(-1)" style="background:none;border:none;color:var(--accent);font-size:26px;cursor:pointer;padding:0 4px;line-height:1">‹</button>
+          <div style="text-align:center">
+            <div style="font-size:13px;font-weight:600">${weekLabel}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${workouts.length} workout${workouts.length!==1?'s':''} this week</div>
+          </div>
+          <button onclick="shiftWorkoutWeek(1)" style="background:none;border:none;color:var(--accent);font-size:26px;cursor:pointer;padding:0 4px;line-height:1">›</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">${dayCircles}</div>
+        <div style="margin-top:12px;text-align:center">${legend}</div>
+      </div>
+      ${cards||`<div class="empty-state" style="padding:24px 20px"><div class="empty-state-icon">💪</div><div class="empty-state-text">No workouts this week.<br>Tap a day to log one.</div></div>`}
+    </div>`;
+
     let fab = document.getElementById('workout-fab');
     if (!fab) {
       fab = document.createElement('button');
-      fab.id = 'workout-fab';
-      fab.className = 'fab';
-      fab.innerHTML = '+';
-      fab.onclick = openWorkoutModal;
+      fab.id = 'workout-fab'; fab.className = 'fab'; fab.innerHTML = '+';
       document.body.appendChild(fab);
     }
+    fab.onclick = () => openWorkoutModal(today);
     fab.style.display = '';
   } catch(e) {
     el.innerHTML = `<div class="empty-state"><div class="empty-state-text">Error loading</div></div>`;
@@ -1768,18 +1844,38 @@ async function loadWorkout() {
   }
 }
 
-function openWorkoutModal() {
-  const today = new Date().toLocaleDateString('en-CA');
+function openWorkoutModal(date) {
+  const dateObj = new Date(date+'T12:00:00');
+  const dateLabel = dateObj.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
       <div class="modal">
         <div class="modal-title">Log Workout</div>
+        <div style="font-size:13px;color:var(--muted);margin:-12px 0 16px">${dateLabel}</div>
         <div class="field">
-          <label>Date</label>
-          <input type="date" id="wk-date" value="${today}">
+          <label>Type</label>
+          <div class="type-toggle" style="display:grid;grid-template-columns:1fr 1fr 1fr">
+            <button id="wk-type-weights" onclick="selectWorkoutType('weights')" style="background:var(--bg-card);color:${WK_COLORS.weights}">Weights</button>
+            <button id="wk-type-cardio" onclick="selectWorkoutType('cardio')">Cardio</button>
+            <button id="wk-type-pushups" onclick="selectWorkoutType('pushups')">Push-ups</button>
+          </div>
         </div>
-        <div id="wk-exercises"></div>
-        <button class="btn btn-secondary" style="width:100%;margin-top:4px" onclick="addWorkoutExercise()">+ Add Exercise</button>
+        <div id="wk-weights-section">
+          <div id="wk-exercises"></div>
+          <button class="btn btn-secondary" style="width:100%;margin-top:4px" onclick="addWorkoutExercise()">+ Add Exercise</button>
+        </div>
+        <div id="wk-cardio-section" style="display:none">
+          <div class="field"><label>Activity</label><input type="text" id="wk-cardio-activity" placeholder="e.g. Running, Jump Rope"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div class="field"><label>Amount</label><input type="number" id="wk-cardio-duration" placeholder="30" min="1"></div>
+            <div class="field"><label>Unit</label><select id="wk-cardio-unit"><option value="min">Minutes</option><option value="reps">Reps</option></select></div>
+          </div>
+        </div>
+        <div id="wk-pushups-section" style="display:none">
+          <div class="field"><label>Total Push-ups</label><input type="number" id="wk-pushups-count" placeholder="50" min="1"></div>
+        </div>
+        <input type="hidden" id="wk-date" value="${date}">
+        <input type="hidden" id="wk-type" value="weights">
         <div class="modal-actions">
           <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
           <button class="btn btn-primary" onclick="saveWorkout()">Save</button>
@@ -1787,6 +1883,16 @@ function openWorkoutModal() {
       </div>
     </div>`;
   addWorkoutExercise();
+}
+
+function selectWorkoutType(type) {
+  document.getElementById('wk-type').value = type;
+  ['weights','cardio','pushups'].forEach(t => {
+    const btn = document.getElementById(`wk-type-${t}`);
+    btn.style.background = t === type ? 'var(--bg-card)' : '';
+    btn.style.color = t === type ? WK_COLORS[t] : '';
+    document.getElementById(`wk-${t}-section`).style.display = t === type ? '' : 'none';
+  });
 }
 
 function addWorkoutExercise() {
@@ -1818,21 +1924,34 @@ function addWorkoutSet(btn) {
 
 async function saveWorkout() {
   const date = document.getElementById('wk-date').value;
-  if (!date) { showToast('Pick a date', 'error'); return; }
-  const exercises = [];
-  document.querySelectorAll('.wk-exercise').forEach(exEl => {
-    const name = exEl.querySelector('.wk-name').value.trim();
-    if (!name) return;
-    const sets = [];
-    const repsInputs = exEl.querySelectorAll('.wk-reps');
-    const weightInputs = exEl.querySelectorAll('.wk-weight');
-    repsInputs.forEach((inp, i) => {
-      const reps = parseInt(inp.value) || 0;
-      const weight = parseFloat(weightInputs[i].value) || 0;
-      if (reps > 0) sets.push({ reps, weight });
+  const type = document.getElementById('wk-type').value;
+  let exercises;
+  if (type === 'weights') {
+    const exs = [];
+    document.querySelectorAll('.wk-exercise').forEach(exEl => {
+      const name = exEl.querySelector('.wk-name').value.trim();
+      if (!name) return;
+      const sets = [];
+      exEl.querySelectorAll('.wk-reps').forEach((inp, i) => {
+        const reps = parseInt(inp.value) || 0;
+        const weight = parseFloat(exEl.querySelectorAll('.wk-weight')[i].value) || 0;
+        if (reps > 0) sets.push({ reps, weight });
+      });
+      exs.push({ name, sets });
     });
-    exercises.push({ name, sets });
-  });
+    exercises = { type: 'weights', exercises: exs };
+  } else if (type === 'cardio') {
+    const activity = document.getElementById('wk-cardio-activity').value.trim();
+    const duration = parseFloat(document.getElementById('wk-cardio-duration').value) || 0;
+    const unit = document.getElementById('wk-cardio-unit').value;
+    if (!activity) { showToast('Enter an activity', 'error'); return; }
+    if (!duration) { showToast('Enter amount', 'error'); return; }
+    exercises = { type: 'cardio', activity, duration, unit };
+  } else {
+    const count = parseInt(document.getElementById('wk-pushups-count').value) || 0;
+    if (!count) { showToast('Enter push-up count', 'error'); return; }
+    exercises = { type: 'pushups', count };
+  }
   try {
     await api('POST', 'workouts', '', { user_id: currentUserId, date, exercises });
     closeModal();

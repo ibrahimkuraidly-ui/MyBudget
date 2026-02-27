@@ -1992,26 +1992,44 @@ async function loadWater() {
   if (gFab) gFab.style.display = 'none';
   const el = document.getElementById('water-content');
   el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+  // Units stored as tenths-of-oz integers: glass=80 (8oz), bottle=169 (16.9oz), goal=640 (64oz)
+  const GLASS = 80, BOTTLE = 169, GOAL = 640;
   try {
     const today = new Date().toLocaleDateString('en-CA');
     const logs = await api('GET', 'water_logs', `user_id=eq.${currentUserId}&date=eq.${today}&select=*`);
-    const glasses = logs[0] ? logs[0].glasses : 0;
-    const goal = 8;
-    const fill = Math.min(100, Math.round((glasses / goal) * 100));
-    const glassIcons = Array.from({length: goal}, (_, i) =>
-      `<span style="font-size:26px;opacity:${i < glasses ? 1 : 0.2}">💧</span>`
-    ).join('');
+    const units = logs[0] ? logs[0].glasses : 0;
+    const oz = (units / 10).toFixed(1);
+    const fill = Math.min(100, Math.round((units / GOAL) * 100));
+    const fillColor = fill >= 100 ? 'var(--green)' : '#38bdf8';
     el.innerHTML = `
-      <div style="text-align:center;padding:32px 16px 16px">
-        <div style="font-size:72px;font-weight:800;color:var(--accent);line-height:1">${glasses}</div>
-        <div style="font-size:15px;color:var(--muted);margin:6px 0 20px">of ${goal} glasses today</div>
-        <div style="margin-bottom:16px">${glassIcons}</div>
-        <div class="progress-bar" style="max-width:260px;margin:0 auto 28px">
-          <div class="progress-fill safe" style="width:${fill}%;background:#38bdf8"></div>
+      <div style="padding:20px 16px">
+        <div style="text-align:center;padding:20px 0 24px">
+          <div style="font-size:64px;font-weight:800;color:#38bdf8;line-height:1">${oz}</div>
+          <div style="font-size:15px;color:var(--muted);margin:6px 0 16px">of 64 oz today</div>
+          <div class="progress-bar" style="max-width:280px;margin:0 auto 6px">
+            <div class="progress-fill" style="width:${fill}%;background:${fillColor}"></div>
+          </div>
+          <div style="font-size:11px;color:var(--muted)">${fill}% of daily goal</div>
         </div>
-        <div style="display:flex;gap:12px;justify-content:center">
-          <button class="btn btn-secondary" onclick="updateWater(-1)" ${glasses <= 0 ? 'disabled style="opacity:0.4"' : ''} style="font-size:22px;padding:12px 28px">−</button>
-          <button class="btn btn-primary" onclick="updateWater(1)" style="font-size:18px;padding:12px 32px">+ Glass</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="card" style="text-align:center;padding:18px 12px">
+            <div style="font-size:32px;margin-bottom:6px">🥛</div>
+            <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px">Glass</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:14px">8 oz</div>
+            <div style="display:flex;gap:8px;justify-content:center">
+              <button class="btn btn-secondary btn-sm" onclick="updateWater(-${GLASS})" ${units < GLASS ? 'disabled style="opacity:0.4"' : ''}>−</button>
+              <button class="btn btn-primary btn-sm" onclick="updateWater(${GLASS})">+ Add</button>
+            </div>
+          </div>
+          <div class="card" style="text-align:center;padding:18px 12px">
+            <div style="font-size:32px;margin-bottom:6px">🍶</div>
+            <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px">Bottle</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:14px">16.9 oz</div>
+            <div style="display:flex;gap:8px;justify-content:center">
+              <button class="btn btn-secondary btn-sm" onclick="updateWater(-${BOTTLE})" ${units < BOTTLE ? 'disabled style="opacity:0.4"' : ''}>−</button>
+              <button class="btn btn-primary btn-sm" onclick="updateWater(${BOTTLE})">+ Add</button>
+            </div>
+          </div>
         </div>
       </div>`;
   } catch(e) {
@@ -2020,16 +2038,16 @@ async function loadWater() {
   }
 }
 
-async function updateWater(delta) {
+async function updateWater(units) {
   const today = new Date().toLocaleDateString('en-CA');
   try {
     const logs = await api('GET', 'water_logs', `user_id=eq.${currentUserId}&date=eq.${today}&select=*`);
     const existing = logs[0];
-    const newGlasses = Math.max(0, (existing ? existing.glasses : 0) + delta);
+    const newUnits = Math.max(0, (existing ? existing.glasses : 0) + units);
     if (existing) {
-      await api('PATCH', 'water_logs', `id=eq.${existing.id}`, { glasses: newGlasses });
+      await api('PATCH', 'water_logs', `id=eq.${existing.id}`, { glasses: newUnits });
     } else {
-      await api('POST', 'water_logs', '', { user_id: currentUserId, date: today, glasses: newGlasses });
+      await api('POST', 'water_logs', '', { user_id: currentUserId, date: today, glasses: newUnits });
     }
     loadWater();
   } catch(e) {

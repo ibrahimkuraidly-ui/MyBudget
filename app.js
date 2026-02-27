@@ -166,19 +166,24 @@ function toggleAppSwitcher() {
 }
 
 function switchApp(app) {
+  ['workout-fab','grocery-fab'].forEach(id => { const f = document.getElementById(id); if (f) f.style.display = 'none'; });
   _currentApp = app;
   localStorage.setItem('helm-app', app);
   document.getElementById('app-switcher').classList.add('hidden');
   document.getElementById('opt-finance').classList.toggle('active', app === 'finance');
   document.getElementById('opt-invest').classList.toggle('active', app === 'invest');
+  document.getElementById('opt-health').classList.toggle('active', app === 'health');
   document.getElementById('tab-bar-finance').style.display = app === 'finance' ? '' : 'none';
   document.getElementById('tab-bar-invest').style.display = app === 'invest' ? '' : 'none';
+  document.getElementById('tab-bar-health').style.display = app === 'health' ? '' : 'none';
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   if (app === 'finance') {
     activateTab(localStorage.getItem('helm-finance-tab') || 'dashboard');
-  } else {
+  } else if (app === 'invest') {
     activateTab(localStorage.getItem('helm-invest-tab') || 'portfolio');
+  } else {
+    activateTab(localStorage.getItem('helm-health-tab') || 'workout');
   }
 }
 

@@ -12,6 +12,7 @@ let _currentApp = 'finance';
 let _privacyMode = false;
 let _workoutWeek = null;
 let _groceryCollapsed = {};
+let _waterCache = null;
 
 const ACCOUNT_TYPES = ['401k','Roth IRA','Traditional IRA','Brokerage','HSA','Crypto','Savings Bond','Other'];
 

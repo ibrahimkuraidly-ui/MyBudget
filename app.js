@@ -1389,7 +1389,7 @@ async function submitSetIncome(existingId) {
     }
     closeModal();
     showToast('Income cycle saved', 'success');
-    loadDashboard();
+    loadDashboard(true);
   } catch (e) { showToast(e.message, 'error'); }
 }
 

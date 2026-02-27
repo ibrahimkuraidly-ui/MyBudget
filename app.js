@@ -2087,6 +2087,13 @@ async function loadGrocery() {
         <button onclick="setGroceryView('analysis')" class="${view === 'analysis' ? 'active-income' : ''}">Diet AI</button>
       </div>`;
     if (view === 'items') {
+      // Auto-categorize items missing a category, save silently in background
+      items.forEach(item => {
+        if (!item.category) {
+          item.category = detectGroceryCategory(item.name) || 'Other';
+          api('PATCH', 'grocery_items', `id=eq.${item.id}`, { category: item.category }).catch(() => {});
+        }
+      });
       if (items.length === 0) {
         html += `
           <div class="empty-state">
@@ -2095,19 +2102,32 @@ async function loadGrocery() {
             <button class="btn btn-secondary" style="margin-top:16px" onclick="seedGroceryItems()">Populate common items</button>
           </div>`;
       } else {
-        html += '<div class="card">';
+        const CAT_ORDER = ['Protein','Vegetables','Fruits','Grains & Bread','Dairy','Fats & Nuts','Pantry','Frozen','Beverages','Other'];
+        const grouped = {};
+        CAT_ORDER.forEach(c => grouped[c] = []);
         items.forEach(item => {
-          html += `<div class="list-item">
-            <div class="list-item-left"><div class="list-item-title">${item.name}</div></div>
-            <div style="display:flex;gap:8px;align-items:center">
-              <button onclick="toggleGroceryToBuy('${item.id}',${item.to_buy})" style="background:none;border:none;cursor:pointer;padding:4px;display:flex">
-                <svg viewBox="0 0 24 24" width="22" height="22" stroke="${item.to_buy ? '#22c55e' : 'var(--muted)'}" fill="${item.to_buy ? 'rgba(34,197,94,0.15)' : 'none'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-              </button>
-              <button onclick="deleteGroceryItem('${item.id}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:20px;padding:4px;line-height:1">×</button>
-            </div>
-          </div>`;
+          const cat = item.category || 'Other';
+          if (!grouped[cat]) grouped[cat] = [];
+          grouped[cat].push(item);
         });
-        html += '</div>';
+        CAT_ORDER.filter(cat => grouped[cat].length > 0).forEach(cat => {
+          html += `
+            <div style="margin-bottom:4px">
+              <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;padding:8px 4px 6px">${cat}</div>
+              <div class="card" style="padding:0 12px">`;
+          grouped[cat].forEach(item => {
+            html += `<div class="list-item">
+              <div class="list-item-left"><div class="list-item-title">${item.name}</div></div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <button onclick="toggleGroceryToBuy('${item.id}',${item.to_buy})" style="background:none;border:none;cursor:pointer;padding:4px;display:flex">
+                  <svg viewBox="0 0 24 24" width="22" height="22" stroke="${item.to_buy ? '#22c55e' : 'var(--muted)'}" fill="${item.to_buy ? 'rgba(34,197,94,0.15)' : 'none'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                </button>
+                <button onclick="deleteGroceryItem('${item.id}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:20px;padding:4px;line-height:1">×</button>
+              </div>
+            </div>`;
+          });
+          html += `</div></div>`;
+        });
         html += `<button class="btn btn-secondary" style="width:100%;margin-top:10px;font-size:12px" onclick="seedGroceryItems()">+ Add missing common items</button>`;
       }
     } else if (view === 'shopping') {

@@ -2145,18 +2145,16 @@ async function loadGrocery() {
       } else {
         html += '<div class="card">';
         shopItems.forEach(item => {
-          html += `<div class="list-item" onclick="toggleGroceryBought('${item.id}',${item.bought},'${item.name.replace(/'/g,"\\'")}','${(item.category||'Other').replace(/'/g,"\\'")}')" style="cursor:pointer">
-            <div class="list-item-left"><div class="list-item-title" style="${item.bought ? 'text-decoration:line-through;color:var(--muted)' : ''}">${item.name}</div></div>
-            <div style="width:24px;height:24px;border-radius:6px;border:2px solid ${item.bought ? 'var(--green)' : 'var(--border)'};background:${item.bought ? 'var(--green)' : 'none'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          html += `<div id="shop-row-${item.id}" class="list-item" onclick="toggleGroceryBought('${item.id}',${item.bought},'${item.name.replace(/'/g,"\\'")}','${(item.category||'Other').replace(/'/g,"\\'")}')" style="cursor:pointer">
+            <div class="list-item-left"><div id="shop-title-${item.id}" class="list-item-title" style="${item.bought ? 'text-decoration:line-through;color:var(--muted)' : ''}">${item.name}</div></div>
+            <div id="shop-check-${item.id}" style="width:24px;height:24px;border-radius:6px;border:2px solid ${item.bought ? 'var(--green)' : 'var(--border)'};background:${item.bought ? 'var(--green)' : 'none'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background 0.15s,border-color 0.15s">
               ${item.bought ? '<svg viewBox="0 0 24 24" width="14" height="14" stroke="#0f1117" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
             </div>
           </div>`;
         });
         html += '</div>';
         const boughtCount = shopItems.filter(i => i.bought).length;
-        if (boughtCount > 0) {
-          html += `<button class="btn btn-secondary" style="width:100%;margin-top:12px" onclick="doneShopping()">Done Shopping (clear ${boughtCount})</button>`;
-        }
+        html += `<button id="done-shopping-btn" class="btn btn-secondary" style="width:100%;margin-top:12px;${boughtCount === 0 ? 'display:none' : ''}" onclick="doneShopping()">Done Shopping (clear ${boughtCount})</button>`;
       }
     } else {
       const since = new Date();

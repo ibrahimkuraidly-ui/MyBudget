@@ -980,7 +980,7 @@ async function submitEditBudget(id) {
   if (isNaN(limit)) { showToast('Enter a valid amount', 'error'); return; }
   try {
     await api('PATCH', 'budgets', `id=eq.${id}`, { limit_amount: limit });
-    closeModal(); showToast('Saved', 'success'); loadBudget();
+    closeModal(); showToast('Saved', 'success'); loadBudget(true);
   } catch (e) { showToast(e.message, 'error'); }
 }
 

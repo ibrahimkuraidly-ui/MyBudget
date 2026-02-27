@@ -496,6 +496,9 @@ function loadPage(tab) {
     case 'portfolio':    loadPortfolio();    break;
     case 'markets':      loadMarkets();      break;
     case 'picks':        loadPicks();        break;
+    case 'workout':      loadWorkout();      break;
+    case 'water':        loadWater();        break;
+    case 'grocery':      loadGrocery();      break;
   }
 }
 

@@ -2145,7 +2145,7 @@ async function loadGrocery() {
       } else {
         html += '<div class="card">';
         shopItems.forEach(item => {
-          html += `<div class="list-item" onclick="toggleGroceryBought('${item.id}',${item.bought})" style="cursor:pointer">
+          html += `<div class="list-item" onclick="toggleGroceryBought('${item.id}',${item.bought},'${item.name.replace(/'/g,"\\'")}','${(item.category||'Other').replace(/'/g,"\\'")}')" style="cursor:pointer">
             <div class="list-item-left"><div class="list-item-title" style="${item.bought ? 'text-decoration:line-through;color:var(--muted)' : ''}">${item.name}</div></div>
             <div style="width:24px;height:24px;border-radius:6px;border:2px solid ${item.bought ? 'var(--green)' : 'var(--border)'};background:${item.bought ? 'var(--green)' : 'none'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
               ${item.bought ? '<svg viewBox="0 0 24 24" width="14" height="14" stroke="#0f1117" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}

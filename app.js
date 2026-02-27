@@ -126,7 +126,9 @@ function showLogin() {
   document.getElementById('app-header').style.display = 'none';
   document.getElementById('tab-bar-finance').style.display = 'none';
   document.getElementById('tab-bar-invest').style.display = 'none';
+  document.getElementById('tab-bar-health').style.display = 'none';
   document.getElementById('content').style.display = 'none';
+  ['workout-fab','grocery-fab'].forEach(id => { const f = document.getElementById(id); if (f) f.style.display = 'none'; });
 }
 
 function showApp() {

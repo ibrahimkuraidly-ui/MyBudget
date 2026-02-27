@@ -2181,13 +2181,21 @@ function setGroceryView(view) {
 }
 
 function openAddGroceryItem() {
+  const CATS = ['Protein','Vegetables','Fruits','Grains & Bread','Dairy','Fats & Nuts','Pantry','Frozen','Beverages','Other'];
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
       <div class="modal">
         <div class="modal-title">Add Item</div>
         <div class="field">
           <label>Item Name</label>
-          <input type="text" id="grocery-name" placeholder="e.g. Milk">
+          <input type="text" id="grocery-name" placeholder="e.g. Almond milk" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>Category <span id="grocery-cat-hint" style="color:var(--muted);font-style:italic;font-size:11px"></span></label>
+          <select id="grocery-cat">
+            <option value="">Select category…</option>
+            ${CATS.map(c => `<option value="${c}">${c}</option>`).join('')}
+          </select>
         </div>
         <div class="modal-actions">
           <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
@@ -2195,14 +2203,30 @@ function openAddGroceryItem() {
         </div>
       </div>
     </div>`;
-  setTimeout(() => document.getElementById('grocery-name')?.focus(), 100);
+  const nameEl = document.getElementById('grocery-name');
+  nameEl.addEventListener('input', function() {
+    clearTimeout(this._t);
+    this._t = setTimeout(() => {
+      const suggested = detectGroceryCategory(this.value);
+      const catEl = document.getElementById('grocery-cat');
+      const hint = document.getElementById('grocery-cat-hint');
+      if (suggested && !catEl.value) {
+        catEl.value = suggested;
+        hint.textContent = '· auto-detected';
+      } else if (!this.value) {
+        hint.textContent = '';
+      }
+    }, 400);
+  });
+  setTimeout(() => nameEl.focus(), 100);
 }
 
 async function saveGroceryItem() {
   const name = document.getElementById('grocery-name').value.trim();
+  const category = document.getElementById('grocery-cat').value || detectGroceryCategory(name) || 'Other';
   if (!name) { showToast('Enter an item name', 'error'); return; }
   try {
-    await api('POST', 'grocery_items', '', { user_id: currentUserId, name });
+    await api('POST', 'grocery_items', '', { user_id: currentUserId, name, category });
     closeModal();
     showToast('Item added', 'success');
     loadGrocery();

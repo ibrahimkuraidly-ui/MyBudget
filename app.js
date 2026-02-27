@@ -1783,12 +1783,14 @@ async function loadWorkout() {
       const dStr = d.toLocaleDateString('en-CA');
       const isToday = dStr === today;
       const dayWorkouts = byDate[dStr] || [];
-      const firstType = dayWorkouts.length > 0 ? (dayWorkouts[0].exercises?.type || 'weights') : null;
-      const color = firstType ? WK_COLORS[firstType] : null;
+      const types = [...new Set(dayWorkouts.map(w => w.exercises?.type || 'weights'))];
+      const hasWorkout = types.length > 0;
+      const bg = wkCircleBg(types);
+      const border = isToday ? 'var(--accent)' : (hasWorkout ? 'transparent' : 'var(--border)');
       dayCircles += `<div onclick="openWorkoutModal('${dStr}')" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;-webkit-tap-highlight-color:transparent">
         <div style="font-size:10px;color:var(--muted);font-weight:600">${dayLetters[i]}</div>
-        <div style="width:36px;height:36px;border-radius:50%;background:${color||'transparent'};border:2px solid ${isToday?'var(--accent)':(color||'var(--border)')};display:flex;align-items:center;justify-content:center;box-shadow:${color?'0 0 8px '+color+'55':'none'}">
-          ${color?`<svg viewBox="0 0 24 24" width="16" height="16" stroke="#fff" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`:(isToday?`<div style="width:6px;height:6px;border-radius:50%;background:var(--accent)"></div>`:'')}
+        <div style="width:36px;height:36px;border-radius:50%;background:${bg};border:2px solid ${border};display:flex;align-items:center;justify-content:center;box-shadow:${hasWorkout?'0 0 8px rgba(255,255,255,0.15)':'none'}">
+          ${hasWorkout?`<svg viewBox="0 0 24 24" width="16" height="16" stroke="#fff" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`:(isToday?`<div style="width:6px;height:6px;border-radius:50%;background:var(--accent)"></div>`:'')}
         </div>
         <div style="font-size:10px;color:${isToday?'var(--accent)':'var(--muted)'}">${d.getDate()}</div>
       </div>`;

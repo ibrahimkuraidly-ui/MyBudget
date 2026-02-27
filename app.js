@@ -2261,9 +2261,12 @@ async function toggleGroceryToBuy(id, current) {
   }
 }
 
-async function toggleGroceryBought(id, current) {
+async function toggleGroceryBought(id, current, name, category) {
   try {
     await api('PATCH', 'grocery_items', `id=eq.${id}`, { bought: !current });
+    if (!current && name) {
+      api('POST', 'grocery_purchases', '', { user_id: currentUserId, name, category: category || 'Other' }).catch(() => {});
+    }
     loadGrocery();
   } catch(e) {
     showToast(e.message, 'error');

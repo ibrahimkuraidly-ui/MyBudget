@@ -2057,6 +2057,20 @@ async function updateWater(units) {
 
 // ─── Health: Grocery ─────────────────────────────────────────────────────────
 
+function detectGroceryCategory(name) {
+  const n = name.toLowerCase();
+  if (['chicken','beef','ground','steak','pork','lamb','turkey','egg','eggs','salmon','tuna','shrimp','fish','tilapia','cod','sardine','crab','bacon','sausage','hot dog','meat','tofu','tempeh','lentil','bean','chickpea','edamame','protein'].some(k => n.includes(k))) return 'Protein';
+  if (['spinach','kale','broccoli','cauliflower','carrot','tomato','cucumber','lettuce','celery','onion','garlic','pepper','zucchini','eggplant','asparagus','sweet potato','potato','beet','cabbage','brussels','arugula','mushroom','leek','scallion','bok choy','vegetable','veggie','greens','salad','corn','peas','artichoke','radish'].some(k => n.includes(k))) return 'Vegetables';
+  if (['apple','banana','orange','grape','strawberry','blueberry','raspberry','mango','pineapple','watermelon','peach','pear','cherry','kiwi','lemon','lime','avocado','pomegranate','melon','papaya','fruit','berries','fig','date'].some(k => n.includes(k))) return 'Fruits';
+  if (['rice','oats','oatmeal','quinoa','bread','pasta','tortilla','cereal','granola','wheat','barley','buckwheat','farro','noodle','bagel','pita','wrap','cracker','grain','baguette','roll','loaf','flour tortilla','corn tortilla'].some(k => n.includes(k))) return 'Grains & Bread';
+  if (['milk','cheese','yogurt','butter','cream','mozzarella','cheddar','parmesan','feta','ricotta','sour cream','kefir','ghee','brie','gouda','cream cheese','cottage','dairy'].some(k => n.includes(k))) return 'Dairy';
+  if (['olive oil','vegetable oil','coconut oil','avocado oil','almond','walnut','cashew','peanut butter','almond butter','nut butter','chia','flax','sesame','tahini','sunflower seed','pumpkin seed','hemp','nuts'].some(k => n.includes(k))) return 'Fats & Nuts';
+  if (['frozen','ice cream'].some(k => n.includes(k))) return 'Frozen';
+  if (['juice','soda','coffee','tea','energy drink','sports drink','coconut water','lemonade'].some(k => n.includes(k))) return 'Beverages';
+  if (['broth','stock','sauce','paste','vinegar','honey','sugar','salt','ketchup','mustard','mayo','soy sauce','hot sauce','flour','baking','canned','can of'].some(k => n.includes(k))) return 'Pantry';
+  return null;
+}
+
 async function loadGrocery() {
   hideFab();
   const wFab = document.getElementById('workout-fab');

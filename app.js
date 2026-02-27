@@ -1074,7 +1074,7 @@ async function submitGoal() {
   if (!name || !target) { showToast('Fill in name and target amount', 'error'); return; }
   try {
     await api('POST', 'savings_goals', '', { user_id: currentUserId, name, target_amount: target, current_amount: current, target_date });
-    closeModal(); showToast('Goal created', 'success'); loadSavings();
+    closeModal(); showToast('Goal created', 'success'); loadSavings(true);
   } catch (e) { showToast(e.message, 'error'); }
 }
 

@@ -2277,13 +2277,32 @@ async function toggleGroceryToBuy(id, current) {
 }
 
 async function toggleGroceryBought(id, current, name, category) {
+  const newState = !current;
+  const CHECK_SVG = '<svg viewBox="0 0 24 24" width="14" height="14" stroke="#0f1117" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  const row = document.getElementById('shop-row-' + id);
+  const title = document.getElementById('shop-title-' + id);
+  const check = document.getElementById('shop-check-' + id);
+  // Optimistic update
+  if (row) row.onclick = () => toggleGroceryBought(id, newState, name, category);
+  if (title) { title.style.textDecoration = newState ? 'line-through' : ''; title.style.color = newState ? 'var(--muted)' : ''; }
+  if (check) { check.style.borderColor = newState ? 'var(--green)' : 'var(--border)'; check.style.background = newState ? 'var(--green)' : 'none'; check.innerHTML = newState ? CHECK_SVG : ''; }
+  // Update Done Shopping button count
+  const doneBtn = document.getElementById('done-shopping-btn');
+  if (doneBtn) {
+    const nowBought = [...document.querySelectorAll('[id^="shop-check-"]')].filter(el => el.style.background === 'var(--green)').length;
+    doneBtn.textContent = `Done Shopping (clear ${nowBought})`;
+    doneBtn.style.display = nowBought === 0 ? 'none' : '';
+  }
   try {
-    await api('PATCH', 'grocery_items', `id=eq.${id}`, { bought: !current });
-    if (!current && name) {
+    await api('PATCH', 'grocery_items', `id=eq.${id}`, { bought: newState });
+    if (newState && name) {
       api('POST', 'grocery_purchases', '', { user_id: currentUserId, name, category: category || 'Other' }).catch(() => {});
     }
-    loadGrocery();
   } catch(e) {
+    // Revert on failure
+    if (row) row.onclick = () => toggleGroceryBought(id, current, name, category);
+    if (title) { title.style.textDecoration = current ? 'line-through' : ''; title.style.color = current ? 'var(--muted)' : ''; }
+    if (check) { check.style.borderColor = current ? 'var(--green)' : 'var(--border)'; check.style.background = current ? 'var(--green)' : 'none'; check.innerHTML = current ? CHECK_SVG : ''; }
     showToast(e.message, 'error');
   }
 }

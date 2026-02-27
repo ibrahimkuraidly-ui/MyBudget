@@ -1994,7 +1994,7 @@ async function loadWater() {
   el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {
     const today = new Date().toLocaleDateString('en-CA');
-    const logs = await api('GET', 'water_logs', `user_id=eq.${currentUserId}&log_date=eq.${today}&select=*`);
+    const logs = await api('GET', 'water_logs', `user_id=eq.${currentUserId}&date=eq.${today}&select=*`);
     const glasses = logs[0] ? logs[0].glasses : 0;
     const goal = 8;
     const fill = Math.min(100, Math.round((glasses / goal) * 100));
@@ -2023,7 +2023,7 @@ async function loadWater() {
 async function updateWater(delta) {
   const today = new Date().toLocaleDateString('en-CA');
   try {
-    const logs = await api('GET', 'water_logs', `user_id=eq.${currentUserId}&log_date=eq.${today}&select=*`);
+    const logs = await api('GET', 'water_logs', `user_id=eq.${currentUserId}&date=eq.${today}&select=*`);
     const existing = logs[0];
     const newGlasses = Math.max(0, (existing ? existing.glasses : 0) + delta);
     if (existing) {

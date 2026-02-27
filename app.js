@@ -1115,10 +1115,10 @@ async function deleteGoal(id) {
 let _investChart = null;
 let _marketsTimer = null;
 
-async function loadPortfolio() {
+async function loadPortfolio(silent = false) {
   hideFab();
   const el = document.getElementById('portfolio-content');
-  el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+  if (!silent) el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {
     const [accounts, snapshots] = await Promise.all([
       api('GET', 'investment_accounts',  `user_id=eq.${currentUserId}&select=*&order=created_at`),

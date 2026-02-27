@@ -2568,7 +2568,7 @@ async function seedGroceryItems() {
       api('POST', 'grocery_items', '', { user_id: currentUserId, name, category })
     ));
     showToast(`Added ${toAdd.length} items`, 'success');
-    loadGrocery();
+    loadGrocery(true);
   } catch(e) {
     showToast(e.message, 'error');
   }

@@ -456,8 +456,10 @@ document.querySelectorAll('.tab[data-tab]').forEach(btn => {
     localStorage.setItem('mybudget-tab', tab);
     if (['dashboard','transactions','budget','savings'].includes(tab)) {
       localStorage.setItem('helm-finance-tab', tab);
-    } else {
+    } else if (['portfolio','markets','picks'].includes(tab)) {
       localStorage.setItem('helm-invest-tab', tab);
+    } else {
+      localStorage.setItem('helm-health-tab', tab);
     }
   });
 });

@@ -2186,6 +2186,15 @@ function setGroceryView(view) {
   loadGrocery();
 }
 
+function toggleGroceryCategory(cat) {
+  _groceryCollapsed[cat] = !_groceryCollapsed[cat];
+  const catId = cat.replace(/[^a-zA-Z0-9]/g, '_');
+  const el = document.getElementById('gcat-' + catId);
+  const chev = document.getElementById('gchev-' + catId);
+  if (el) el.style.display = _groceryCollapsed[cat] ? 'none' : '';
+  if (chev) chev.style.transform = _groceryCollapsed[cat] ? 'rotate(-90deg)' : '';
+}
+
 function openAddGroceryItem() {
   const CATS = ['Protein','Vegetables','Fruits','Grains & Bread','Dairy','Fats & Nuts','Pantry','Frozen','Beverages','Other'];
   document.getElementById('modal-root').innerHTML = `

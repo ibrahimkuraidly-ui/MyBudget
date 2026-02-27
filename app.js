@@ -2072,12 +2072,12 @@ function detectGroceryCategory(name) {
   return null;
 }
 
-async function loadGrocery() {
+async function loadGrocery(silent = false) {
   hideFab();
   const wFab = document.getElementById('workout-fab');
   if (wFab) wFab.style.display = 'none';
   const el = document.getElementById('grocery-content');
-  el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+  if (!silent) el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   const view = localStorage.getItem('helm-grocery-view') || 'items';
   try {
     const items = await api('GET', 'grocery_items', `user_id=eq.${currentUserId}&order=created_at.asc&select=*`);

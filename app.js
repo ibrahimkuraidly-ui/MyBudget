@@ -1734,6 +1734,23 @@ function forceRefreshPicks() {
 
 const WK_COLORS = { weights: '#f97316', cardio: '#38bdf8', pushups: '#22c55e' };
 const WK_LABELS = { weights: 'Weights', cardio: 'Cardio', pushups: 'Push-ups' };
+let _workoutAnalysis = false;
+
+function detectMuscleGroup(name) {
+  const n = name.toLowerCase();
+  if (['bench', 'chest fly', 'chest flye', 'incline press', 'decline press', 'pec', 'cable fly', 'cable flye'].some(k => n.includes(k))) return 'Chest';
+  if (['skull', 'tricep', 'pushdown', 'push down', 'close grip', 'overhead extension', 'cable extension'].some(k => n.includes(k))) return 'Triceps';
+  if (['curl', 'bicep', 'hammer', 'preacher', 'concentration'].some(k => n.includes(k))) return 'Biceps';
+  if (['lateral raise', 'shoulder press', 'military press', 'overhead press', 'ohp', 'front raise', 'shrug', 'face pull', 'arnold'].some(k => n.includes(k))) return 'Shoulders';
+  if (['pulldown', 'pull-up', 'pullup', 'pull up', 'chin up', 'chinup', 'row', 'deadlift', 'rdl', 'rear delt'].some(k => n.includes(k))) return 'Back';
+  if (['squat', 'lunge', 'leg press', 'leg curl', 'leg extension', 'calf', 'hip thrust', 'glute', 'step up', 'bulgarian', 'split squat'].some(k => n.includes(k))) return 'Legs';
+  if (['plank', 'crunch', 'sit-up', 'situp', 'ab ', 'abs', 'core', 'russian twist', 'leg raise', 'hanging'].some(k => n.includes(k))) return 'Core';
+  if (n.includes('dip')) return 'Triceps';
+  if (n.includes('fly') || n.includes('flye')) return 'Chest';
+  if (n.includes('press')) return 'Chest';
+  if (n.includes('pull')) return 'Back';
+  return null;
+}
 
 function wkCircleBg(types) {
   if (types.length === 0) return 'transparent';

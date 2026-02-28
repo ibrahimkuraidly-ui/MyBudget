@@ -2039,6 +2039,9 @@ function selectWorkoutType(type) {
     btn.style.color = t === type ? WK_COLORS[t] : '';
     document.getElementById(`wk-${t}-section`).style.display = t === type ? '' : 'none';
   });
+  if (type === 'pushups' && !document.getElementById('wk-bw-exercises').children.length) {
+    addBodyweightExercise();
+  }
 }
 
 function addWorkoutExercise() {

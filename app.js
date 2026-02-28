@@ -1906,7 +1906,7 @@ async function loadWorkout(silent = false) {
         <div class="stat-card">
           <div class="stat-label">Streak</div>
           <div class="stat-value" style="color:var(--orange)">${streak > 0 ? '🔥 ' + streak : '—'}</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px">${streak === 1 ? 'day' : 'days'}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">${streak === 1 ? 'week' : 'weeks'}</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Sets</div>

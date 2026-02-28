@@ -1890,6 +1890,30 @@ async function loadWorkout(silent = false) {
     });
     const volLabel = totalVolume >= 1000 ? (totalVolume / 1000).toFixed(1) + 'k' : totalVolume || '—';
 
+    // Overall assessment: compare recent 2 weeks vs prior 2 weeks
+    const cutoff2w = new Date(); cutoff2w.setDate(cutoff2w.getDate() - 14);
+    const cutoff4w = new Date(); cutoff4w.setDate(cutoff4w.getDate() - 28);
+    const recentH = historyRows.filter(w => new Date(w.date+'T12:00:00') >= cutoff2w);
+    const priorH  = historyRows.filter(w => { const d = new Date(w.date+'T12:00:00'); return d >= cutoff4w && d < cutoff2w; });
+    const calcVol = rows => rows.reduce((sum, w) => {
+      return sum + (w.exercises?.exercises || []).reduce((s2, ex) =>
+        s2 + (ex.sets || []).reduce((s3, s) => s3 + (s.reps||0)*(s.weight||0), 0), 0);
+    }, 0);
+    const recentVol = calcVol(recentH), priorVol = calcVol(priorH);
+    let assessLabel, assessColor, assessIcon;
+    if (historyRows.length === 0) {
+      assessLabel = 'No data yet'; assessColor = 'var(--muted)'; assessIcon = '—';
+    } else if (priorH.length === 0) {
+      assessLabel = 'Just Starting'; assessColor = 'var(--green)'; assessIcon = '🌱';
+    } else {
+      const volRatio = priorVol > 0 ? recentVol / priorVol : 1;
+      const freqRatio = priorH.length > 0 ? recentH.length / priorH.length : 1;
+      const score = (volRatio + freqRatio) / 2;
+      if (score >= 1.05) { assessLabel = 'Improving'; assessColor = 'var(--green)'; assessIcon = '📈'; }
+      else if (score < 0.90) { assessLabel = 'Slacking'; assessColor = 'var(--red)'; assessIcon = '📉'; }
+      else { assessLabel = 'Maintaining'; assessColor = 'var(--yellow)'; assessIcon = '➡️'; }
+    }
+
     const weekLabel = `${mon.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${sun.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
     const dayLetters = ['M','T','W','T','F','S','S'];
     let dayCircles = '';

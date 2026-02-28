@@ -2632,7 +2632,10 @@ async function deleteGroceryItem(id) {
 
 async function doneShopping() {
   try {
-    const bought = await api('GET', 'grocery_items', `user_id=eq.${currentUserId}&bought=eq.true&select=id`);
+    const bought = await api('GET', 'grocery_items', `user_id=eq.${currentUserId}&bought=eq.true&select=id,name,category`);
+    await Promise.all(bought.map(item =>
+      api('POST', 'grocery_purchases', '', { user_id: currentUserId, name: item.name, category: item.category || 'Other' }).catch(() => {})
+    ));
     await Promise.all(bought.map(item =>
       api('PATCH', 'grocery_items', `id=eq.${item.id}`, { bought: false, to_buy: false })
     ));

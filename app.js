@@ -1733,7 +1733,7 @@ function forceRefreshPicks() {
 // ─── Health: Workout ─────────────────────────────────────────────────────────
 
 const WK_COLORS = { weights: '#f97316', cardio: '#38bdf8', pushups: '#22c55e' };
-const WK_LABELS = { weights: 'Weights', cardio: 'Cardio', pushups: 'Push-ups' };
+const WK_LABELS = { weights: 'Weights', cardio: 'Cardio', pushups: 'Bodyweight' };
 let _workoutAnalysis = false;
 
 function detectMuscleGroup(name) {

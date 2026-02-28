@@ -1969,6 +1969,14 @@ async function loadWorkout(silent = false) {
           <div style="font-size:10px;color:var(--muted);margin-top:2px">${totalVolume > 0 ? 'lbs' : 'this week'}</div>
         </div>
       </div>
+      <div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px">
+        <div>
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:4px">Overall</div>
+          <div style="font-size:20px;font-weight:800;color:${assessColor}">${assessIcon} ${assessLabel}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">vs last 2 weeks</div>
+        </div>
+        <button onclick="_workoutAnalysis=true;loadWorkout()" class="btn btn-secondary btn-sm">Full Analysis →</button>
+      </div>
     </div>`;
 
     let fab = document.getElementById('workout-fab');

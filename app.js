@@ -2109,9 +2109,15 @@ async function saveWorkout() {
     if (!duration) { showToast('Enter amount', 'error'); return; }
     exercises = { type: 'cardio', activity, duration, unit };
   } else {
-    const count = parseInt(document.getElementById('wk-pushups-count').value) || 0;
-    if (!count) { showToast('Enter push-up count', 'error'); return; }
-    exercises = { type: 'pushups', count };
+    const bwExs = [];
+    document.querySelectorAll('#wk-bw-exercises > div').forEach(row => {
+      const name = row.querySelector('.wk-bw-name').value.trim();
+      const amount = parseFloat(row.querySelector('.wk-bw-amount').value) || 0;
+      const unit = row.querySelector('.wk-bw-unit').value;
+      if (name && amount > 0) bwExs.push({ name, amount, unit });
+    });
+    if (!bwExs.length) { showToast('Add at least one exercise', 'error'); return; }
+    exercises = { type: 'pushups', exercises: bwExs };
   }
   try {
     await api('POST', 'workouts', '', { user_id: currentUserId, date, exercises });

@@ -2612,9 +2612,6 @@ async function toggleGroceryBought(id, current, name, category) {
   }
   try {
     await api('PATCH', 'grocery_items', `id=eq.${id}`, { bought: newState });
-    if (newState && name) {
-      api('POST', 'grocery_purchases', '', { user_id: currentUserId, name, category: category || 'Other' }).catch(() => {});
-    }
   } catch(e) {
     // Revert on failure
     if (row) row.onclick = () => toggleGroceryBought(id, current, name, category);

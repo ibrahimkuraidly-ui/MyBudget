@@ -2118,6 +2118,132 @@ async function deleteWorkout(id) {
   }
 }
 
+// ─── Workout Analysis Page ────────────────────────────────────────────────────
+
+async function _loadWorkoutAnalysisPage(el) {
+  try {
+    const since90 = new Date(); since90.setDate(since90.getDate() - 90);
+    const since90str = since90.toLocaleDateString('en-CA');
+    const all = await api('GET', 'workouts', `user_id=eq.${currentUserId}&date=gte.${since90str}&order=date.desc&select=*`);
+
+    // ── Muscle group coverage ──
+    const MUSCLES = ['Chest','Back','Shoulders','Biceps','Triceps','Legs','Core'];
+    const muscleLastDate = {};
+    const muscleCount = {};
+    MUSCLES.forEach(m => { muscleLastDate[m] = null; muscleCount[m] = 0; });
+
+    all.forEach(w => {
+      if (w.exercises?.type === 'weights') {
+        (w.exercises.exercises || []).forEach(ex => {
+          const mg = detectMuscleGroup(ex.name);
+          if (mg && MUSCLES.includes(mg)) {
+            muscleCount[mg]++;
+            if (!muscleLastDate[mg] || w.date > muscleLastDate[mg]) muscleLastDate[mg] = w.date;
+          }
+        });
+      } else if (w.exercises?.type === 'cardio') {
+        muscleCount['Cardio'] = (muscleCount['Cardio'] || 0) + 1;
+      } else if (w.exercises?.type === 'pushups') {
+        muscleCount['Chest'] = (muscleCount['Chest'] || 0) + 1;
+        muscleCount['Triceps'] = (muscleCount['Triceps'] || 0) + 1;
+      }
+    });
+
+    const today = new Date().toLocaleDateString('en-CA');
+    const daysSince = date => date ? Math.floor((new Date(today) - new Date(date)) / 86400000) : 999;
+
+    let muscleHTML = MUSCLES.map(mg => {
+      const days = daysSince(muscleLastDate[mg]);
+      const neglected = days >= 14;
+      const never = days === 999;
+      const statusColor = never ? 'var(--muted)' : neglected ? 'var(--red)' : days <= 3 ? 'var(--green)' : 'var(--yellow)';
+      const statusText = never ? 'Never trained' : neglected ? `${days}d ago — neglected` : `${days}d ago`;
+      return `<div class="list-item">
+        <div class="list-item-left">
+          <div class="list-item-title">${mg}</div>
+          <div class="list-item-sub">${muscleCount[mg]} session${muscleCount[mg]!==1?'s':''} in 90 days</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:12px;font-weight:600;color:${statusColor}">${statusText}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    // ── Exercise progress ──
+    const cutoff2w = new Date(); cutoff2w.setDate(cutoff2w.getDate() - 14);
+    const cutoff4w = new Date(); cutoff4w.setDate(cutoff4w.getDate() - 28);
+    const exMap = {};
+    all.forEach(w => {
+      if (w.exercises?.type !== 'weights') return;
+      const isRecent = new Date(w.date+'T12:00:00') >= cutoff2w;
+      const isPrior  = new Date(w.date+'T12:00:00') >= cutoff4w && new Date(w.date+'T12:00:00') < cutoff2w;
+      (w.exercises.exercises || []).forEach(ex => {
+        if (!ex.name) return;
+        if (!exMap[ex.name]) exMap[ex.name] = { recent: [], prior: [] };
+        const maxW = Math.max(...(ex.sets||[]).map(s => s.weight||0), 0);
+        const avgR = (ex.sets||[]).reduce((a,s)=>a+(s.reps||0),0) / Math.max((ex.sets||[]).length,1);
+        if (isRecent) exMap[ex.name].recent.push({ maxW, avgR });
+        else if (isPrior) exMap[ex.name].prior.push({ maxW, avgR });
+      });
+    });
+
+    const avg = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0;
+    let progressHTML = '';
+    Object.entries(exMap).forEach(([name, data]) => {
+      if (!data.recent.length) return;
+      const mg = detectMuscleGroup(name);
+      const recentMaxW = avg(data.recent.map(d=>d.maxW));
+      const priorMaxW  = avg(data.prior.map(d=>d.maxW));
+      const recentAvgR = avg(data.recent.map(d=>d.avgR));
+      const priorAvgR  = avg(data.prior.map(d=>d.avgR));
+
+      let trend, trendColor;
+      if (!data.prior.length) {
+        trend = 'New'; trendColor = 'var(--muted)';
+      } else {
+        const wRatio = priorMaxW > 0 ? recentMaxW / priorMaxW : 1;
+        const rRatio = priorAvgR > 0 ? recentAvgR / priorAvgR : 1;
+        const score = (wRatio + rRatio) / 2;
+        if (score >= 1.04) { trend = '↑ Improving'; trendColor = 'var(--green)'; }
+        else if (score < 0.93) { trend = '↓ Slacking'; trendColor = 'var(--red)'; }
+        else { trend = '→ Maintaining'; trendColor = 'var(--yellow)'; }
+      }
+      const wLabel = recentMaxW > 0 ? `${recentMaxW.toFixed(0)}lb max` : '';
+      const rLabel = recentAvgR > 0 ? `${recentAvgR.toFixed(1)} avg reps` : '';
+      progressHTML += `<div class="list-item">
+        <div class="list-item-left">
+          <div class="list-item-title">${name}</div>
+          <div class="list-item-sub">${mg || ''}${wLabel ? ' · ' + wLabel : ''}${rLabel ? ' · ' + rLabel : ''}</div>
+        </div>
+        <div style="font-size:12px;font-weight:700;color:${trendColor};text-align:right">${trend}</div>
+      </div>`;
+    });
+
+    el.innerHTML = `<div style="padding-bottom:80px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:0 4px">
+        <button onclick="_workoutAnalysis=false;loadWorkout()" style="background:none;border:none;color:var(--accent);font-size:26px;cursor:pointer;padding:0;line-height:1">‹</button>
+        <div style="font-size:17px;font-weight:700">Workout Analysis</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Muscle Group Coverage · Last 90 Days</div>
+        ${muscleHTML || '<div style="color:var(--muted);font-size:13px">No weight training logged yet.</div>'}
+      </div>
+      <div class="card" style="margin-top:0">
+        <div class="card-title">Exercise Progress · Last 4 Weeks</div>
+        ${progressHTML || '<div style="color:var(--muted);font-size:13px">Log a few weeks of workouts to see progress.</div>'}
+      </div>
+    </div>`;
+
+    let fab = document.getElementById('workout-fab');
+    if (!fab) { fab = document.createElement('button'); fab.id = 'workout-fab'; fab.className = 'fab'; fab.innerHTML = '+'; document.body.appendChild(fab); }
+    fab.onclick = () => openWorkoutModal(today);
+    fab.style.display = '';
+  } catch(e) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-state-text">Error loading analysis</div></div>`;
+    showToast(e.message, 'error');
+  }
+}
+
 // ─── Health: Water ────────────────────────────────────────────────────────────
 
 async function loadWater(silent = false) {

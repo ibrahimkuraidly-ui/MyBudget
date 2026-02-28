@@ -1838,8 +1838,16 @@ async function loadWorkout(silent = false) {
     let streak = 0;
     const streakCheck = new Date();
     if (!dateSet.has(today)) streakCheck.setDate(streakCheck.getDate() - 1);
-    while (dateSet.has(streakCheck.toLocaleDateString('en-CA'))) {
-      streak++;
+    let missedInARow = 0;
+    while (true) {
+      const dStr = streakCheck.toLocaleDateString('en-CA');
+      if (dateSet.has(dStr)) {
+        streak++;
+        missedInARow = 0;
+      } else {
+        missedInARow++;
+        if (missedInARow >= 2) break;
+      }
       streakCheck.setDate(streakCheck.getDate() - 1);
     }
 

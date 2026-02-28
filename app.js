@@ -1812,7 +1812,13 @@ async function loadWorkout(silent = false) {
         } else if (type === 'cardio') {
           detail = `<span style="font-size:13px;color:var(--muted)">${data.activity} — ${data.duration} ${data.unit==='reps'?'reps':'min'}</span>`;
         } else if (type === 'pushups') {
-          detail = `<span style="font-size:13px;color:var(--muted)">${data.count} push-ups</span>`;
+          if (data.exercises) {
+            detail = data.exercises.map(ex =>
+              `<div style="margin-bottom:3px"><span style="font-size:13px;font-weight:600">${ex.name}</span> <span style="font-size:12px;color:var(--muted)">${ex.amount} ${ex.unit}</span></div>`
+            ).join('');
+          } else {
+            detail = `<span style="font-size:13px;color:var(--muted)">${data.count} push-ups</span>`;
+          }
         }
         cards += `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${detail?10:0}px"><span style="font-size:11px;font-weight:600;color:${color};background:${color}22;padding:2px 8px;border-radius:10px">${label}</span><button class="btn btn-danger btn-sm" onclick="deleteWorkout('${w.id}')">Delete</button></div>${detail}</div>`;
       });

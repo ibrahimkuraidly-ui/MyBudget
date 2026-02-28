@@ -1823,12 +1823,36 @@ async function loadWorkout(silent = false) {
     const monStr = mon.toLocaleDateString('en-CA');
     const sunStr = sun.toLocaleDateString('en-CA');
 
-    const workouts = await api('GET', 'workouts', `user_id=eq.${currentUserId}&date=gte.${monStr}&date=lte.${sunStr}&order=date.asc&select=*`);
+    const [workouts, streakRows] = await Promise.all([
+      api('GET', 'workouts', `user_id=eq.${currentUserId}&date=gte.${monStr}&date=lte.${sunStr}&order=date.asc&select=*`),
+      api('GET', 'workouts', `user_id=eq.${currentUserId}&date=gte.${(() => { const d = new Date(); d.setDate(d.getDate()-90); return d.toLocaleDateString('en-CA'); })()}&select=date`)
+    ]);
     const byDate = {};
     workouts.forEach(w => {
       if (!byDate[w.date]) byDate[w.date] = [];
       byDate[w.date].push(w);
     });
+
+    // Streak
+    const dateSet = new Set(streakRows.map(w => w.date));
+    let streak = 0;
+    const streakCheck = new Date();
+    if (!dateSet.has(today)) streakCheck.setDate(streakCheck.getDate() - 1);
+    while (dateSet.has(streakCheck.toLocaleDateString('en-CA'))) {
+      streak++;
+      streakCheck.setDate(streakCheck.getDate() - 1);
+    }
+
+    // Sets & volume (weights only)
+    let totalSets = 0, totalVolume = 0;
+    workouts.forEach(w => {
+      const exs = (w.exercises?.exercises) || [];
+      exs.forEach(ex => {
+        totalSets += (ex.sets || []).length;
+        (ex.sets || []).forEach(s => { totalVolume += (s.reps || 0) * (s.weight || 0); });
+      });
+    });
+    const volLabel = totalVolume >= 1000 ? (totalVolume / 1000).toFixed(1) + 'k' : totalVolume || '—';
 
     const weekLabel = `${mon.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${sun.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
     const dayLetters = ['M','T','W','T','F','S','S'];

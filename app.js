@@ -2002,7 +2002,7 @@ function openWorkoutModal(date) {
           <div class="type-toggle" style="display:grid;grid-template-columns:1fr 1fr 1fr">
             <button id="wk-type-weights" onclick="selectWorkoutType('weights')" style="background:var(--bg-card);color:${WK_COLORS.weights}">Weights</button>
             <button id="wk-type-cardio" onclick="selectWorkoutType('cardio')">Cardio</button>
-            <button id="wk-type-pushups" onclick="selectWorkoutType('pushups')">Push-ups</button>
+            <button id="wk-type-pushups" onclick="selectWorkoutType('pushups')">Bodyweight</button>
           </div>
         </div>
         <div id="wk-weights-section">
@@ -2017,7 +2017,8 @@ function openWorkoutModal(date) {
           </div>
         </div>
         <div id="wk-pushups-section" style="display:none">
-          <div class="field"><label>Total Push-ups</label><input type="number" id="wk-pushups-count" placeholder="50" min="1"></div>
+          <div id="wk-bw-exercises"></div>
+          <button class="btn btn-secondary" style="width:100%;margin-top:4px" onclick="addBodyweightExercise()">+ Add Exercise</button>
         </div>
         <input type="hidden" id="wk-date" value="${date}">
         <input type="hidden" id="wk-type" value="weights">

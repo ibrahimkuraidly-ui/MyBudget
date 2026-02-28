@@ -1892,7 +1892,23 @@ async function loadWorkout(silent = false) {
         <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">${dayCircles}</div>
         <div style="margin-top:12px;text-align:center">${legend}</div>
       </div>
-      <div class="empty-state" style="padding:24px 20px"><div class="empty-state-icon">💪</div><div class="empty-state-text">Tap a day to see workouts.</div></div>
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-label">Streak</div>
+          <div class="stat-value" style="color:var(--orange)">${streak > 0 ? '🔥 ' + streak : '—'}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">${streak === 1 ? 'day' : 'days'}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Sets</div>
+          <div class="stat-value">${totalSets || '—'}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">this week</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Volume</div>
+          <div class="stat-value">${volLabel}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">${totalVolume > 0 ? 'lbs' : 'this week'}</div>
+        </div>
+      </div>
     </div>`;
 
     let fab = document.getElementById('workout-fab');

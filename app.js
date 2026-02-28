@@ -1847,9 +1847,11 @@ async function loadWorkout(silent = false) {
     const monStr = mon.toLocaleDateString('en-CA');
     const sunStr = sun.toLocaleDateString('en-CA');
 
-    const [workouts, streakRows] = await Promise.all([
+    const hist56ago = (() => { const d = new Date(); d.setDate(d.getDate()-56); return d.toLocaleDateString('en-CA'); })();
+    const [workouts, streakRows, historyRows] = await Promise.all([
       api('GET', 'workouts', `user_id=eq.${currentUserId}&date=gte.${monStr}&date=lte.${sunStr}&order=date.asc&select=*`),
-      api('GET', 'workouts', `user_id=eq.${currentUserId}&date=gte.${(() => { const d = new Date(); d.setDate(d.getDate()-90); return d.toLocaleDateString('en-CA'); })()}&select=date`)
+      api('GET', 'workouts', `user_id=eq.${currentUserId}&date=gte.${(() => { const d = new Date(); d.setDate(d.getDate()-90); return d.toLocaleDateString('en-CA'); })()}&select=date`),
+      api('GET', 'workouts', `user_id=eq.${currentUserId}&date=gte.${hist56ago}&order=date.desc&select=*`)
     ]);
     const byDate = {};
     workouts.forEach(w => {

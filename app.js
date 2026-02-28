@@ -2172,8 +2172,14 @@ async function _loadWorkoutAnalysisPage(el) {
       } else if (w.exercises?.type === 'cardio') {
         muscleCount['Cardio'] = (muscleCount['Cardio'] || 0) + 1;
       } else if (w.exercises?.type === 'pushups') {
-        muscleCount['Chest'] = (muscleCount['Chest'] || 0) + 1;
-        muscleCount['Triceps'] = (muscleCount['Triceps'] || 0) + 1;
+        const bwExs = w.exercises.exercises || (w.exercises.count ? [{ name: 'Push-ups' }] : []);
+        bwExs.forEach(ex => {
+          const mg = detectMuscleGroup(ex.name);
+          if (mg && MUSCLES.includes(mg)) {
+            muscleCount[mg]++;
+            if (!muscleLastDate[mg] || w.date > muscleLastDate[mg]) muscleLastDate[mg] = w.date;
+          }
+        });
       }
     });
 

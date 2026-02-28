@@ -1769,6 +1769,7 @@ function getWeekMonday(d) {
 
 function shiftWorkoutWeek(delta) {
   _workoutDay = null;
+  _workoutAnalysis = false;
   if (!_workoutWeek) _workoutWeek = getWeekMonday(new Date());
   _workoutWeek = new Date(_workoutWeek);
   _workoutWeek.setDate(_workoutWeek.getDate() + delta * 7);

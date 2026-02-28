@@ -1834,6 +1834,12 @@ async function loadWorkout(silent = false) {
     return;
   }
 
+  // ── Analysis view ──
+  if (_workoutAnalysis) {
+    await _loadWorkoutAnalysisPage(el);
+    return;
+  }
+
   // ── Week view ──
   try {
     const mon = new Date(_workoutWeek);

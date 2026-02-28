@@ -1833,22 +1833,24 @@ async function loadWorkout(silent = false) {
       byDate[w.date].push(w);
     });
 
-    // Streak
+    // Streak: weekly rule — max 1 rest day per week, counts in weeks
     const dateSet = new Set(streakRows.map(w => w.date));
     let streak = 0;
-    const streakCheck = new Date();
-    if (!dateSet.has(today)) streakCheck.setDate(streakCheck.getDate() - 1);
-    let missedInARow = 0;
-    while (true) {
-      const dStr = streakCheck.toLocaleDateString('en-CA');
-      if (dateSet.has(dStr)) {
-        streak++;
-        missedInARow = 0;
-      } else {
-        missedInARow++;
-        if (missedInARow >= 2) break;
+    const todayDate = new Date();
+    let wMon = getWeekMonday(new Date(todayDate));
+    for (let i = 0; i < 52; i++) {
+      const wSun = new Date(wMon); wSun.setDate(wSun.getDate() + 6);
+      const endDate = i === 0 ? todayDate : wSun;
+      let missed = 0, worked = false;
+      const d = new Date(wMon);
+      while (d <= endDate) {
+        dateSet.has(d.toLocaleDateString('en-CA')) ? (worked = true) : missed++;
+        d.setDate(d.getDate() + 1);
       }
-      streakCheck.setDate(streakCheck.getDate() - 1);
+      if (i === 0 && !worked) { wMon.setDate(wMon.getDate() - 7); continue; }
+      if (!worked || missed >= 2) break;
+      streak++;
+      wMon.setDate(wMon.getDate() - 7);
     }
 
     // Sets & volume (weights only)

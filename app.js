@@ -2080,7 +2080,7 @@ async function loadWorkout(silent = false) {
           </div>
           <div style="font-size:12px;color:var(--muted)">Try: ${MUSCLE_EX[pick.name].join(' · ')}</div>
         </div>`;
-      } else {
+      } else if (pick.kind === 'cardio') {
         const c = WK_COLORS.cardio;
         suggestionCard = `<div class="card">
           <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:10px">Suggested Today</div>
@@ -2092,6 +2092,19 @@ async function loadWorkout(silent = false) {
             <span style="font-size:12px;color:var(--muted)">${daysText}</span>
           </div>
           <div style="font-size:12px;color:var(--muted)">Running · Cycling · Jump Rope · HIIT</div>
+        </div>`;
+      } else {
+        const c = WK_COLORS.pushups;
+        suggestionCard = `<div class="card">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:10px">Suggested Today</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:${c};background:${c}22;padding:3px 10px;border-radius:10px">Bodyweight</span>
+              <span style="font-size:18px;font-weight:800">Bodyweight</span>
+            </div>
+            <span style="font-size:12px;color:var(--muted)">${daysText}</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted)">Push-ups · Pull-ups · Dips · Plank</div>
         </div>`;
       }
     }

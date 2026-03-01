@@ -2165,6 +2165,7 @@ async function loadWorkout(silent = false) {
           <div style="font-size:10px;color:var(--muted);margin-top:2px">${totalVolume > 0 ? 'lbs' : 'this week'}</div>
         </div>
       </div>
+      ${weekCoverageCard}
       ${suggestionCard}
       <div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px">
         <div>

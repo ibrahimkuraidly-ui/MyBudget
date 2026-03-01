@@ -2132,6 +2132,7 @@ async function saveWorkout() {
       });
       exs.push({ name, sets });
     });
+    if (!exs.length) { showToast('Enter an exercise name', 'error'); return; }
     exercises = { type: 'weights', exercises: exs };
   } else if (type === 'cardio') {
     const activity = document.getElementById('wk-cardio-activity').value.trim();
@@ -2153,9 +2154,18 @@ async function saveWorkout() {
   }
   try {
     await api('POST', 'workouts', '', { user_id: currentUserId, date, exercises });
-    closeModal();
-    showToast('Workout logged!', 'success');
+    showToast('Saved!', 'success');
     loadWorkout(true);
+    if (type === 'weights') {
+      document.getElementById('wk-exercises').innerHTML = '';
+      addWorkoutExercise();
+    } else if (type === 'cardio') {
+      document.getElementById('wk-cardio-activity').value = '';
+      document.getElementById('wk-cardio-duration').value = '';
+    } else {
+      document.getElementById('wk-bw-exercises').innerHTML = '';
+      addBodyweightExercise();
+    }
   } catch(e) {
     showToast(e.message, 'error');
   }

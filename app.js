@@ -1781,6 +1781,12 @@ function openWorkoutDay(dateStr) {
   loadWorkout();
 }
 
+async function openWorkoutDayAndLog(dateStr) {
+  _workoutDay = dateStr;
+  await loadWorkout();
+  openWorkoutModal(dateStr);
+}
+
 async function loadWorkout(silent = false) {
   hideFab();
   const gFab = document.getElementById('grocery-fab');

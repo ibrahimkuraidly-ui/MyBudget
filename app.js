@@ -163,7 +163,50 @@ function showApp() {
     ? (localStorage.getItem('helm-health-tab')  || 'workout')
     : (localStorage.getItem('helm-finance-tab') || 'dashboard');
   activateTab(savedTab);
+  setTimeout(checkWaterReminder, 1200);
 }
+
+async function checkWaterReminder() {
+  const TWO_HOURS = 2 * 60 * 60 * 1000;
+  const last = parseInt(localStorage.getItem('helm-water-reminder-last') || '0');
+  if (Date.now() - last < TWO_HOURS) return;
+
+  const now = new Date();
+  const hour = now.getHours() + now.getMinutes() / 60;
+  if (hour < 8 || hour >= 22) return; // outside active window
+
+  const expectedOz = ((hour - 8) / 14) * 64;
+
+  try {
+    let units = 0;
+    const today = now.toLocaleDateString('en-CA');
+    if (_waterCache && _waterCache.date === today) {
+      units = _waterCache.units;
+    } else {
+      const logs = await api('GET', 'water_logs', `user_id=eq.${currentUserId}&date=eq.${today}&select=glasses`);
+      units = logs[0] ? logs[0].glasses : 0;
+    }
+    const actualOz = units / 10;
+    if (actualOz >= expectedOz - 8) return; // within one glass of target
+
+    localStorage.setItem('helm-water-reminder-last', Date.now().toString());
+
+    const banner = document.createElement('div');
+    banner.id = 'water-reminder-banner';
+    banner.style.cssText = `position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:9999;background:#0ea5e9;color:#fff;padding:10px 18px;border-radius:12px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,0.3);transition:opacity 0.5s;white-space:nowrap;pointer-events:none`;
+    banner.innerHTML = `💧 Drink some water — you're behind on today's goal`;
+    document.body.appendChild(banner);
+
+    setTimeout(() => {
+      banner.style.opacity = '0';
+      setTimeout(() => banner.remove(), 500);
+    }, 5000);
+  } catch(e) { /* silent fail */ }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && currentUserId) checkWaterReminder();
+});
 
 function toggleAppSwitcher() {
   document.getElementById('app-switcher').classList.toggle('hidden');

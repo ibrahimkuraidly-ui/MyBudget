@@ -594,6 +594,7 @@ async function loadDashboard(silent = false) {
           ${_privacyMode ? '••••' : flexRemaining != null ? (flexRemaining < 0 ? '-' : '') + fmtS(Math.abs(flexRemaining)) : '—'}
         </div>
         <div style="font-size:11px;color:var(--muted);margin-top:4px">Normal Spending · Groceries · Sara Allowance</div>
+        ${perDay != null && !_privacyMode ? `<div style="font-size:11px;color:var(--muted);margin-top:3px">${(perDay < 0 ? '-$' : '$') + Math.abs(perDay).toFixed(0)}/day · ${daysLeft} day${daysLeft !== 1 ? 's' : ''} left</div>` : ''}
       </div>
       <div class="stat-row two" style="margin-bottom:8px">
         <div class="stat-card" onclick="openCardPayment('Capital One',${coBalance})" style="cursor:pointer">

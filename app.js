@@ -2055,7 +2055,7 @@ function openWorkoutModal(date) {
         <input type="hidden" id="wk-date" value="${date}">
         <input type="hidden" id="wk-type" value="weights">
         <div class="modal-actions">
-          <button class="btn btn-secondary" onclick="closeModal()">Done</button>
+          <button class="btn btn-secondary" onclick="closeModal()">Finish</button>
           <button class="btn btn-primary" onclick="saveWorkout()">+ Exercise</button>
         </div>
       </div>

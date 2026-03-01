@@ -1797,30 +1797,35 @@ async function loadWorkout(silent = false) {
       const workouts = await api('GET', 'workouts', `user_id=eq.${currentUserId}&date=eq.${dateStr}&order=created_at.asc&select=*`);
       const dateObj = new Date(dateStr + 'T12:00:00');
       const dayLabel = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+      const TRASH_ICO = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
       let cards = '';
       workouts.forEach(w => {
         const data = w.exercises || {};
         const type = data.type || 'weights';
         const color = WK_COLORS[type]; const label = WK_LABELS[type];
-        let detail = '';
+        let body = '';
         if (type === 'weights') {
           const exs = data.exercises || (Array.isArray(data) ? data : []);
-          detail = exs.map(ex => {
-            const sets = (ex.sets||[]).map(s=>`${s.reps}×${s.weight}lb`).join(' · ');
-            return `<div style="margin-bottom:3px"><span style="font-size:13px;font-weight:600">${ex.name}</span> <span style="font-size:12px;color:var(--muted)">${sets}</span></div>`;
+          const totalSets = exs.reduce((n, ex) => n + (ex.sets||[]).length, 0);
+          body += `<div style="font-size:11px;color:var(--muted);margin-bottom:12px">${exs.length} exercise${exs.length!==1?'s':''} · ${totalSets} set${totalSets!==1?'s':''}</div>`;
+          body += exs.map(ex => {
+            const chips = (ex.sets||[]).map(s =>
+              `<span style="display:inline-flex;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:12px;font-weight:500;white-space:nowrap">${s.reps}<span style="color:var(--muted);margin:0 2px">×</span>${s.weight}lb</span>`
+            ).join('');
+            return `<div style="margin-bottom:10px"><div style="font-size:14px;font-weight:700;margin-bottom:6px">${ex.name}</div><div style="display:flex;flex-wrap:wrap;gap:5px">${chips}</div></div>`;
           }).join('');
         } else if (type === 'cardio') {
-          detail = `<span style="font-size:13px;color:var(--muted)">${data.activity} — ${data.duration} ${data.unit==='reps'?'reps':'min'}</span>`;
+          body = `<div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:16px;font-weight:700">${data.activity}</span><span style="font-size:13px;color:var(--muted)">${data.duration} ${data.unit==='reps'?'reps':'min'}</span></div>`;
         } else if (type === 'pushups') {
           if (data.exercises) {
-            detail = data.exercises.map(ex =>
-              `<div style="margin-bottom:3px"><span style="font-size:13px;font-weight:600">${ex.name}</span> <span style="font-size:12px;color:var(--muted)">${ex.amount} ${ex.unit}</span></div>`
+            body = data.exercises.map(ex =>
+              `<div style="margin-bottom:8px"><div style="font-size:14px;font-weight:700;margin-bottom:4px">${ex.name}</div><span style="display:inline-flex;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:12px;font-weight:500">${ex.amount} ${ex.unit}</span></div>`
             ).join('');
           } else {
-            detail = `<span style="font-size:13px;color:var(--muted)">${data.count} push-ups</span>`;
+            body = `<span style="font-size:16px;font-weight:700">${data.count}</span><span style="font-size:13px;color:var(--muted);margin-left:6px">push-ups</span>`;
           }
         }
-        cards += `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${detail?10:0}px"><span style="font-size:11px;font-weight:600;color:${color};background:${color}22;padding:2px 8px;border-radius:10px">${label}</span><button class="btn btn-danger btn-sm" onclick="deleteWorkout('${w.id}')">Delete</button></div>${detail}</div>`;
+        cards += `<div class="card" style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${body?12:0}px"><span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:${color};background:${color}22;padding:3px 10px;border-radius:10px">${label}</span><button onclick="deleteWorkout('${w.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;display:flex;line-height:1">${TRASH_ICO}</button></div>${body}</div>`;
       });
       el.innerHTML = `<div style="padding-bottom:80px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:0 4px">

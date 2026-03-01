@@ -569,6 +569,10 @@ async function loadDashboard(silent = false) {
     const grocRemaining  = (budgetMap['Groceries'] || 0) - (byCat['Groceries'] || 0);
     const saraRemaining  = (budgetMap['Sara Allowance'] || 0) - (byCat['Sara Allowance'] || 0);
     const flexRemaining  = nsRemaining != null ? nsRemaining + grocRemaining + saraRemaining : null;
+    const cycleEnd = new Date(_activeMonth + '-24T12:00:00');
+    const todayMid = new Date(); todayMid.setHours(12, 0, 0, 0);
+    const daysLeft = Math.round((cycleEnd - todayMid) / 86400000) + 1;
+    const perDay = flexRemaining != null && daysLeft > 0 ? flexRemaining / daysLeft : null;
 
     // Budget alerts (only items actually over their limit)
     const alerts = budgets.filter(b => {

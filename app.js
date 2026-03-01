@@ -2039,11 +2039,17 @@ async function loadWorkout(silent = false) {
       Core:      ['Plank','Hanging Leg Raise','Russian Twist'],
     };
     const lastWorked = {}; MUSCLES.forEach(m => { lastWorked[m] = null; });
-    let lastCardio = null;
+    let lastCardio = null, lastBodyweight = null;
     historyRows.forEach(w => {
       const wtype = w.exercises?.type || 'weights';
       if (wtype === 'cardio') {
         if (!lastCardio || w.date > lastCardio) lastCardio = w.date;
+      } else if (wtype === 'pushups') {
+        if (!lastBodyweight || w.date > lastBodyweight) lastBodyweight = w.date;
+        (w.exercises?.exercises || []).forEach(ex => {
+          const mg = detectMuscleGroup(ex.name);
+          if (mg && MUSCLES.includes(mg) && (!lastWorked[mg] || w.date > lastWorked[mg])) lastWorked[mg] = w.date;
+        });
       } else {
         (w.exercises?.exercises || []).forEach(ex => {
           const mg = detectMuscleGroup(ex.name);
@@ -2055,6 +2061,7 @@ async function loadWorkout(silent = false) {
     const candidates = [
       ...MUSCLES.map(m => ({ kind: 'muscle', name: m, days: wDaysSince(lastWorked[m]) })),
       { kind: 'cardio', name: 'Cardio', days: wDaysSince(lastCardio) },
+      { kind: 'bodyweight', name: 'Bodyweight', days: wDaysSince(lastBodyweight) },
     ].filter(c => c.days > 0).sort((a, b) => b.days - a.days);
     const pick = candidates[0] || null;
     let suggestionCard = '';

@@ -2027,6 +2027,32 @@ async function loadWorkout(silent = false) {
       `<span style="font-size:11px;color:${c};margin-right:10px">● ${WK_LABELS[t]}</span>`
     ).join('');
 
+    // ── This week coverage ──
+    const weekMuscles = new Set();
+    let weekHasCardio = false, weekHasBodyweight = false;
+    workouts.forEach(w => {
+      const wtype = w.exercises?.type || 'weights';
+      if (wtype === 'cardio') { weekHasCardio = true; }
+      else if (wtype === 'pushups') {
+        weekHasBodyweight = true;
+        (w.exercises?.exercises || []).forEach(ex => { const mg = detectMuscleGroup(ex.name); if (mg) weekMuscles.add(mg); });
+      } else {
+        (w.exercises?.exercises || []).forEach(ex => { const mg = detectMuscleGroup(ex.name); if (mg) weekMuscles.add(mg); });
+      }
+    });
+    const ALL_MUSCLES = ['Chest','Back','Shoulders','Biceps','Triceps','Legs','Core'];
+    const weekChips = [
+      ...ALL_MUSCLES.map(m => ({ label: m, done: weekMuscles.has(m) })),
+      { label: 'Cardio', done: weekHasCardio },
+      { label: 'Bodyweight', done: weekHasBodyweight },
+    ].map(({ label, done }) =>
+      `<span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid ${done ? 'transparent' : 'var(--border)'};background:${done ? 'rgba(34,197,94,0.12)' : 'var(--bg)'};color:${done ? 'var(--green)' : 'var(--muted)'};white-space:nowrap">${done ? '✓ ' : ''}${label}</span>`
+    ).join('');
+    const weekCoverageCard = `<div class="card">
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:10px">This Week</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">${weekChips}</div>
+    </div>`;
+
     // ── Suggested workout ──
     const MUSCLES = ['Chest','Back','Shoulders','Biceps','Triceps','Legs','Core'];
     const MUSCLE_EX = {

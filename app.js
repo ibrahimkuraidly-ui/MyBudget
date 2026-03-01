@@ -2021,7 +2021,7 @@ async function loadWorkout(silent = false) {
 
     let fab = document.getElementById('workout-fab');
     if (!fab) { fab = document.createElement('button'); fab.id = 'workout-fab'; fab.className = 'fab'; fab.innerHTML = '+'; document.body.appendChild(fab); }
-    fab.onclick = () => openWorkoutDay(today);
+    fab.onclick = () => openWorkoutDayAndLog(today);
     fab.style.display = '';
   } catch(e) {
     el.innerHTML = `<div class="empty-state"><div class="empty-state-text">Error loading</div></div>`;

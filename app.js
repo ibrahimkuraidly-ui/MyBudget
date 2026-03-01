@@ -2027,6 +2027,68 @@ async function loadWorkout(silent = false) {
       `<span style="font-size:11px;color:${c};margin-right:10px">● ${WK_LABELS[t]}</span>`
     ).join('');
 
+    // ── Suggested workout ──
+    const MUSCLES = ['Chest','Back','Shoulders','Biceps','Triceps','Legs','Core'];
+    const MUSCLE_EX = {
+      Chest:     ['Bench Press','Incline Press','Cable Fly'],
+      Back:      ['Pull-ups','Barbell Row','Lat Pulldown'],
+      Shoulders: ['Overhead Press','Lateral Raise','Face Pull'],
+      Biceps:    ['Barbell Curl','Hammer Curl','Preacher Curl'],
+      Triceps:   ['Tricep Pushdown','Skull Crusher','Dips'],
+      Legs:      ['Squat','Romanian Deadlift','Leg Press'],
+      Core:      ['Plank','Hanging Leg Raise','Russian Twist'],
+    };
+    const lastWorked = {}; MUSCLES.forEach(m => { lastWorked[m] = null; });
+    let lastCardio = null;
+    historyRows.forEach(w => {
+      const wtype = w.exercises?.type || 'weights';
+      if (wtype === 'cardio') {
+        if (!lastCardio || w.date > lastCardio) lastCardio = w.date;
+      } else {
+        (w.exercises?.exercises || []).forEach(ex => {
+          const mg = detectMuscleGroup(ex.name);
+          if (mg && MUSCLES.includes(mg) && (!lastWorked[mg] || w.date > lastWorked[mg])) lastWorked[mg] = w.date;
+        });
+      }
+    });
+    const wDaysSince = d => d ? Math.floor((new Date(today+'T12:00:00') - new Date(d+'T12:00:00')) / 86400000) : 999;
+    const candidates = [
+      ...MUSCLES.map(m => ({ kind: 'muscle', name: m, days: wDaysSince(lastWorked[m]) })),
+      { kind: 'cardio', name: 'Cardio', days: wDaysSince(lastCardio) },
+    ].filter(c => c.days > 0).sort((a, b) => b.days - a.days);
+    const pick = candidates[0] || null;
+    let suggestionCard = '';
+    if (pick) {
+      const daysText = pick.days === 999 ? 'Never trained' : `${pick.days} day${pick.days !== 1 ? 's' : ''} ago`;
+      if (pick.kind === 'muscle') {
+        const c = WK_COLORS.weights;
+        suggestionCard = `<div class="card">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:10px">Suggested Today</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:${c};background:${c}22;padding:3px 10px;border-radius:10px">Weights</span>
+              <span style="font-size:18px;font-weight:800">${pick.name}</span>
+            </div>
+            <span style="font-size:12px;color:var(--muted)">${daysText}</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted)">Try: ${MUSCLE_EX[pick.name].join(' · ')}</div>
+        </div>`;
+      } else {
+        const c = WK_COLORS.cardio;
+        suggestionCard = `<div class="card">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:10px">Suggested Today</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:${c};background:${c}22;padding:3px 10px;border-radius:10px">Cardio</span>
+              <span style="font-size:18px;font-weight:800">Cardio</span>
+            </div>
+            <span style="font-size:12px;color:var(--muted)">${daysText}</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted)">Running · Cycling · Jump Rope · HIIT</div>
+        </div>`;
+      }
+    }
+
     el.innerHTML = `<div style="padding-bottom:80px">
       <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">

@@ -2041,7 +2041,6 @@ function openWorkoutModal(date) {
         </div>
         <div id="wk-weights-section">
           <div id="wk-exercises"></div>
-          <button class="btn btn-secondary" style="width:100%;margin-top:4px" onclick="addWorkoutExercise()">+ Add Exercise</button>
         </div>
         <div id="wk-cardio-section" style="display:none">
           <div class="field"><label>Activity</label><input type="text" id="wk-cardio-activity" placeholder="e.g. Running, Jump Rope"></div>
@@ -2052,12 +2051,11 @@ function openWorkoutModal(date) {
         </div>
         <div id="wk-pushups-section" style="display:none">
           <div id="wk-bw-exercises"></div>
-          <button class="btn btn-secondary" style="width:100%;margin-top:4px" onclick="addBodyweightExercise()">+ Add Exercise</button>
         </div>
         <input type="hidden" id="wk-date" value="${date}">
         <input type="hidden" id="wk-type" value="weights">
         <div class="modal-actions">
-          <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-secondary" onclick="closeModal()">Done</button>
           <button class="btn btn-primary" onclick="saveWorkout()">Save</button>
         </div>
       </div>

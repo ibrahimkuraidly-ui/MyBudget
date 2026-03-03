@@ -2712,6 +2712,19 @@ function setGroceryView(view) {
   loadGrocery();
 }
 
+function filterGroceryItems(q) {
+  const query = q.toLowerCase().trim();
+  document.querySelectorAll('#grocery-content .list-item[data-item-name]').forEach(row => {
+    row.style.display = !query || row.dataset.itemName.includes(query) ? '' : 'none';
+  });
+  document.querySelectorAll('#grocery-content [id^="gcat-"]').forEach(catDiv => {
+    const hasVisible = [...catDiv.querySelectorAll('.list-item')].some(r => r.style.display !== 'none');
+    const wrapper = catDiv.parentElement;
+    if (wrapper) wrapper.style.display = hasVisible ? '' : 'none';
+    if (query && hasVisible) catDiv.style.display = '';
+  });
+}
+
 function toggleGroceryCategory(cat) {
   _groceryCollapsed[cat] = !_groceryCollapsed[cat];
   const catId = cat.replace(/[^a-zA-Z0-9]/g, '_');

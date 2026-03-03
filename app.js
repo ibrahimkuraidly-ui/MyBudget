@@ -2646,7 +2646,7 @@ async function loadGrocery(silent = false) {
               </div>
               <div id="gcat-${catId}" class="card" style="padding:0 12px;${collapsed ? 'display:none' : ''}">`;
           grouped[cat].forEach(item => {
-            html += `<div class="list-item">
+            html += `<div class="list-item" data-item-name="${item.name.toLowerCase()}">
               <div class="list-item-left"><div class="list-item-title">${item.name}</div></div>
               <div style="display:flex;gap:8px;align-items:center">
                 <button id="cart-${item.id}" onclick="toggleGroceryToBuy('${item.id}',${item.to_buy})" style="background:none;border:none;cursor:pointer;padding:4px;display:flex">

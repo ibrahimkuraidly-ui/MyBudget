@@ -1645,7 +1645,7 @@ async function loadMarkets() {
     // Build symbol → ticker map from CoinPaprika
     const cpTickers = cpTickersResult.status === 'fulfilled' ? cpTickersResult.value : [];
     const tickerMap = {};
-    cpTickers.forEach(t => { tickerMap[t.symbol] = t; });
+    cpTickers.forEach(t => { if (!tickerMap[t.symbol]) tickerMap[t.symbol] = t; });
 
     const fng      = fngResult.status      === 'fulfilled' ? fngResult.value?.data?.[0] : null;
     const cpGlobal = cpGlobalResult.status === 'fulfilled' ? cpGlobalResult.value : null;

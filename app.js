@@ -1228,23 +1228,33 @@ async function loadPortfolio(silent = false) {
 
     if (accounts.length) {
       accounts.forEach(a => {
-        const balance  = latestByAcct[a.id];
-        const acctSnaps = snapshots.filter(s => s.account_id === a.id);
-        const lastSnap  = acctSnaps[acctSnaps.length - 1];
-        const lastDate  = lastSnap
+        const balance    = latestByAcct[a.id];
+        const acctSnaps  = snapshots.filter(s => s.account_id === a.id);
+        const lastSnap   = acctSnaps[acctSnaps.length - 1];
+        const lastDate   = lastSnap
           ? new Date(lastSnap.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
           : 'No data';
+        const isCrypto   = a.account_type === 'Crypto';
+        const holdings   = holdingsByAcct[a.id] || [];
+        const holdingsLine = isCrypto && holdings.length
+          ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">${holdings.map(h => parseFloat(h.amount) + ' ' + h.coin_symbol.toUpperCase()).join(' · ')}</div>`
+          : '';
+        const escapedName = a.name.replace(/'/g, "\\'");
+        const actionBtn  = isCrypto
+          ? `<button class="btn btn-sm btn-primary" onclick="openEditHoldings('${a.id}','${escapedName}')">Edit Holdings</button>`
+          : `<button class="btn btn-sm btn-primary" onclick="openLogBalance('${a.id}','${a.name}')">Log Balance</button>`;
         html += `<div class="card">
           <div style="display:flex;justify-content:space-between;align-items:flex-start">
             <div>
               <div style="font-size:16px;font-weight:700">${a.name}</div>
               <div style="font-size:12px;color:var(--muted);margin-top:2px">${a.institution ? a.institution + ' · ' : ''}${a.account_type}</div>
+              ${holdingsLine}
               <div style="font-size:11px;color:var(--muted);margin-top:2px">Updated ${lastDate}</div>
             </div>
             <div style="text-align:right">
               <div style="font-size:22px;font-weight:800;color:var(--green)">${balance != null ? privVal(fmtS(balance)) : '—'}</div>
               <div style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">
-                <button class="btn btn-sm btn-primary" onclick="openLogBalance('${a.id}','${a.name}')">Log Balance</button>
+                ${actionBtn}
                 <button class="btn btn-sm btn-danger" onclick="deleteAccount('${a.id}')">✕</button>
               </div>
             </div>

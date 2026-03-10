@@ -1432,6 +1432,17 @@ async function autoUpdateCryptoSnapshots(accounts, existingSnaps, holdingsByAcct
     const tickers = await fetchJSON('https://api.coinpaprika.com/v1/tickers?quotes=USD&limit=2000');
     const priceMap = {};
     tickers.forEach(t => { priceMap[t.symbol.toUpperCase()] = t.quotes?.USD?.price || 0; });
+
+    // CoinGecko fallback for coins not found in CoinPaprika
+    const allSymbols = [...new Set(needsUpdate.flatMap(a => (holdingsByAcct[a.id] || []).map(h => h.coin_symbol.toUpperCase())))];
+    const cgNeeded = COINGECKO_COINS.filter(c => allSymbols.includes(c.sym) && !priceMap[c.sym]);
+    if (cgNeeded.length) {
+      try {
+        const cgData = await fetchJSON(`https://api.coingecko.com/api/v3/simple/price?ids=${cgNeeded.map(c => c.cgId).join(',')}&vs_currencies=usd`);
+        cgNeeded.forEach(c => { if (cgData[c.cgId]?.usd) priceMap[c.sym] = cgData[c.cgId].usd; });
+      } catch (_) {}
+    }
+
     const created = [];
     await Promise.all(needsUpdate.map(async a => {
       const total = (holdingsByAcct[a.id] || []).reduce((sum, h) =>

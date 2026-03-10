@@ -1620,7 +1620,7 @@ async function loadMarkets() {
   el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {
     const [cpTickersResult, fngResult, cpGlobalResult] = await Promise.allSettled([
-      fetchJSON('https://api.coinpaprika.com/v1/tickers?quotes=USD&limit=100'),
+      fetchJSON('https://api.coinpaprika.com/v1/tickers?quotes=USD&limit=2000'),
       fetchJSON('https://api.alternative.me/fng/'),
       fetchJSON('https://api.coinpaprika.com/v1/global'),
     ]);

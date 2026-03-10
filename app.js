@@ -1429,7 +1429,7 @@ async function autoUpdateCryptoSnapshots(accounts, existingSnaps, holdingsByAcct
   );
   if (!needsUpdate.length) return [];
   try {
-    const tickers = await fetchJSON('https://api.coinpaprika.com/v1/tickers?quotes=USD&limit=500');
+    const tickers = await fetchJSON('https://api.coinpaprika.com/v1/tickers?quotes=USD&limit=2000');
     const priceMap = {};
     tickers.forEach(t => { priceMap[t.symbol.toUpperCase()] = t.quotes?.USD?.price || 0; });
     const created = [];

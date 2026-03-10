@@ -1275,20 +1275,39 @@ async function loadPortfolio(silent = false) {
     if (chartDates.length > 1) {
       if (_investChart) { _investChart.destroy(); _investChart = null; }
       const ctx = document.getElementById('invest-chart').getContext('2d');
+      const ACCT_COLORS = ['#3b82f6','#f97316','#a855f7','#ec4899','#06b6d4','#eab308','#ef4444','#6366f1'];
+      const acctDatasets = accounts.map((a, i) => {
+        const color = ACCT_COLORS[i % ACCT_COLORS.length];
+        let lastKnown = null;
+        const data = chartDates.map(date => {
+          if (byDate[date]?.[a.id] !== undefined) lastKnown = byDate[date][a.id];
+          return lastKnown;
+        });
+        if (!data.some(v => v !== null)) return null;
+        return { label: a.name, data, borderColor: color, backgroundColor: 'transparent',
+                 tension: 0.3, fill: false, pointRadius: 2, borderWidth: 1.5 };
+      }).filter(Boolean);
+      const showAcctLines = acctDatasets.length >= 2;
       _investChart = new Chart(ctx, {
         type: 'line',
         data: {
           labels: chartDates.map(d => new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
-          datasets: [{
-            data: chartTotals,
-            borderColor: '#22c55e',
-            backgroundColor: 'rgba(34,197,94,0.1)',
-            tension: 0.3, fill: true, pointRadius: 3, borderWidth: 2,
-          }]
+          datasets: [
+            ...(showAcctLines ? acctDatasets : []),
+            { label: 'Total', data: chartTotals, borderColor: '#22c55e',
+              backgroundColor: 'rgba(34,197,94,0.1)', tension: 0.3, fill: true,
+              pointRadius: 3, borderWidth: showAcctLines ? 2.5 : 2 },
+          ],
         },
         options: {
           responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => _privacyMode ? '••••' : '$' + ctx.parsed.y.toLocaleString() } } },
+          plugins: {
+            legend: {
+              display: showAcctLines,
+              labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 12, padding: 8 },
+            },
+            tooltip: { callbacks: { label: c => (c.dataset.label ? c.dataset.label + ': ' : '') + (_privacyMode ? '••••' : '$' + c.parsed.y.toLocaleString()) } },
+          },
           scales: {
             x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#2e3347' } },
             y: { ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => _privacyMode ? '••••' : '$' + v.toLocaleString() }, grid: { color: '#2e3347' } },

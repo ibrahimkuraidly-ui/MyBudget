@@ -1412,8 +1412,109 @@ async function deleteAccount(id) {
   if (!confirm('Delete this account and all its history?')) return;
   try {
     await api('DELETE', 'investment_snapshots', `account_id=eq.${id}`);
+    await api('DELETE', 'crypto_holdings',      `account_id=eq.${id}&user_id=eq.${currentUserId}`).catch(() => {});
     await api('DELETE', 'investment_accounts',  `id=eq.${id}`);
     showToast('Deleted', 'success'); loadPortfolio(true);
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+// ─── Crypto Holdings ──────────────────────────────────────────────────────────
+
+async function autoUpdateCryptoSnapshots(accounts, existingSnaps, holdingsByAcct) {
+  const today = new Date().toISOString().slice(0, 10);
+  const needsUpdate = accounts.filter(a =>
+    a.account_type === 'Crypto' &&
+    (holdingsByAcct[a.id] || []).length > 0 &&
+    !existingSnaps.some(s => s.account_id === a.id && s.date === today)
+  );
+  if (!needsUpdate.length) return [];
+  try {
+    const tickers = await fetchJSON('https://api.coinpaprika.com/v1/tickers?quotes=USD&limit=500');
+    const priceMap = {};
+    tickers.forEach(t => { priceMap[t.symbol.toUpperCase()] = t.quotes?.USD?.price || 0; });
+    const created = [];
+    await Promise.all(needsUpdate.map(async a => {
+      const total = (holdingsByAcct[a.id] || []).reduce((sum, h) =>
+        sum + parseFloat(h.amount) * (priceMap[h.coin_symbol.toUpperCase()] || 0), 0);
+      if (total <= 0) return;
+      try {
+        const [snap] = await api('POST', 'investment_snapshots', '', {
+          account_id: a.id, user_id: currentUserId,
+          date: today, balance: Math.round(total * 100) / 100, contributions: 0,
+        });
+        if (snap) created.push(snap);
+      } catch (_) {}
+    }));
+    return created;
+  } catch (_) { return []; }
+}
+
+function openEditHoldings(accountId, accountName) {
+  document.getElementById('modal-root').innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-title">Crypto Holdings — ${accountName}</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Balance auto-updates once daily using live prices from CoinPaprika.</div>
+        <div id="holdings-rows"></div>
+        <button class="btn btn-secondary btn-sm" style="width:100%;margin-bottom:16px" onclick="addHoldingRow()">+ Add Coin</button>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="saveHoldings('${accountId}')">Save</button>
+        </div>
+      </div>
+    </div>`;
+  loadHoldingsIntoModal(accountId);
+}
+
+async function loadHoldingsIntoModal(accountId) {
+  try {
+    const rows = await api('GET', 'crypto_holdings', `account_id=eq.${accountId}&user_id=eq.${currentUserId}&select=*`);
+    const container = document.getElementById('holdings-rows');
+    if (!container) return;
+    if (rows.length) {
+      rows.forEach(h => addHoldingRow(h.coin_symbol.toUpperCase(), h.amount));
+    } else {
+      addHoldingRow();
+    }
+  } catch (_) { addHoldingRow(); }
+}
+
+function addHoldingRow(symbol = '', amount = '') {
+  const container = document.getElementById('holdings-rows');
+  if (!container) return;
+  const row = document.createElement('div');
+  row.className = 'holding-row';
+  row.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:center';
+  row.innerHTML = `
+    <input type="text" placeholder="BTC" value="${symbol}" maxlength="10"
+      style="width:72px;padding:10px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;text-transform:uppercase"
+      oninput="this.value=this.value.toUpperCase()">
+    <input type="number" placeholder="Amount" value="${amount}" min="0" step="any" inputmode="decimal"
+      style="flex:1;padding:10px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px">
+    <button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;padding:4px;line-height:1;flex-shrink:0">×</button>`;
+  container.appendChild(row);
+}
+
+async function saveHoldings(accountId) {
+  const rows = document.querySelectorAll('#holdings-rows .holding-row');
+  const holdings = [];
+  for (const row of rows) {
+    const [symInput, amtInput] = row.querySelectorAll('input');
+    const sym = symInput.value.trim().toUpperCase();
+    const amt = parseFloat(amtInput.value);
+    if (!sym || !amt || amt <= 0) continue;
+    holdings.push({ user_id: currentUserId, account_id: accountId, coin_symbol: sym, amount: amt });
+  }
+  if (!holdings.length) { showToast('Add at least one coin', 'error'); return; }
+  try {
+    await api('DELETE', 'crypto_holdings', `account_id=eq.${accountId}&user_id=eq.${currentUserId}`);
+    await api('POST',   'crypto_holdings', '', holdings);
+    // Delete today's snapshot so it recalculates with new holdings on next load
+    const today = new Date().toISOString().slice(0, 10);
+    await api('DELETE', 'investment_snapshots', `account_id=eq.${accountId}&user_id=eq.${currentUserId}&date=eq.${today}`).catch(() => {});
+    closeModal();
+    showToast('Holdings saved', 'success');
+    loadPortfolio(true);
   } catch (e) { showToast(e.message, 'error'); }
 }
 

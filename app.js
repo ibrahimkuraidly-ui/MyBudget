@@ -1717,6 +1717,33 @@ async function loadMarkets() {
     }
     html += `</div>`;
 
+    // ── CoinGecko coins (staking tokens etc.) ──
+    const cgData = cgResult.status === 'fulfilled' ? cgResult.value : {};
+    const cgRows = COINGECKO_COINS.filter(c => cgData[c.cgId]?.usd != null);
+    if (cgRows.length) {
+      html += `<div class="card"><div class="card-title">Staking</div>`;
+      cgRows.forEach(c => {
+        const price  = cgData[c.cgId].usd;
+        const change = cgData[c.cgId].usd_24h_change;
+        const priceStr   = price >= 1
+          ? '$' + price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+          : '$' + price.toFixed(4);
+        const changeStr  = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
+        const changeColor = change >= 0 ? 'var(--green)' : 'var(--red)';
+        html += `<div class="list-item">
+          <div class="list-item-left">
+            <div class="list-item-title">${c.name}</div>
+            <div class="list-item-sub">${c.sym}</div>
+          </div>
+          <div class="list-item-right">
+            <div style="font-size:15px;font-weight:700">${priceStr}</div>
+            <div style="font-size:12px;color:${changeColor}">${changeStr}</div>
+          </div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
     el.innerHTML = html;
   } catch (e) {
     el.innerHTML = `<div class="empty-state"><div class="empty-state-text">Error loading — tap refresh</div></div>`;

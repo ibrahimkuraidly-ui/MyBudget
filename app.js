@@ -1623,10 +1623,12 @@ async function loadMarkets() {
   const el = document.getElementById('markets-content');
   el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {
-    const [cpTickersResult, fngResult, cpGlobalResult] = await Promise.allSettled([
+    const cgIds = COINGECKO_COINS.map(c => c.cgId).join(',');
+    const [cpTickersResult, fngResult, cpGlobalResult, cgResult] = await Promise.allSettled([
       fetchJSON('https://api.coinpaprika.com/v1/tickers?quotes=USD&limit=2000'),
       fetchJSON('https://api.alternative.me/fng/'),
       fetchJSON('https://api.coinpaprika.com/v1/global'),
+      fetchJSON(`https://api.coingecko.com/api/v3/simple/price?ids=${cgIds}&vs_currencies=usd&include_24hr_change=true`),
     ]);
 
     // Build symbol → ticker map from CoinPaprika

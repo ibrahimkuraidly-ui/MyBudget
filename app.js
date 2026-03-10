@@ -1387,7 +1387,6 @@ function openLogBalance(accountId, accountName) {
       <div class="modal">
         <div class="modal-title">Log Balance — ${accountName}</div>
         <div class="field"><label>Current Balance</label><input type="number" id="s-bal" placeholder="0.00" step="0.01" min="0" inputmode="decimal"></div>
-        <div class="field"><label>Contributions This Period</label><input type="number" id="s-contrib" placeholder="0.00" step="0.01" min="0" value="0" inputmode="decimal"></div>
         <div class="field"><label>Date</label><input type="date" id="s-date" value="${today}"></div>
         <div class="modal-actions">
           <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
@@ -1398,12 +1397,11 @@ function openLogBalance(accountId, accountName) {
 }
 
 async function submitSnapshot(accountId) {
-  const balance       = parseFloat(document.getElementById('s-bal').value);
-  const contributions = parseFloat(document.getElementById('s-contrib').value || 0);
-  const date          = document.getElementById('s-date').value;
+  const balance = parseFloat(document.getElementById('s-bal').value);
+  const date    = document.getElementById('s-date').value;
   if (!balance || !date) { showToast('Fill in balance and date', 'error'); return; }
   try {
-    await api('POST', 'investment_snapshots', '', { account_id: accountId, user_id: currentUserId, date, balance, contributions });
+    await api('POST', 'investment_snapshots', '', { account_id: accountId, user_id: currentUserId, date, balance, contributions: 0 });
     closeModal(); showToast('Balance logged', 'success'); loadPortfolio(true);
   } catch (e) { showToast(e.message, 'error'); }
 }

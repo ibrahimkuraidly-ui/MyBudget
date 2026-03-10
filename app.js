@@ -1612,7 +1612,7 @@ const MARKET_CRYPTOS = [
 
 // Coins sourced from CoinGecko (not on CoinPaprika)
 const COINGECKO_COINS = [
-  { sym: 'CDCETH', name: 'CDC Staked ETH', cgId: 'cdceth' },
+  { sym: 'CDCETH', name: 'CDC Staked ETH', cgId: 'crypto-com-staked-eth' },
 ];
 
 function fmtMarketCap(n) {

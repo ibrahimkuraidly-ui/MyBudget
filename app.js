@@ -975,7 +975,7 @@ async function loadBudget(silent = false) {
             <button class="btn btn-sm btn-secondary" onclick="openEditBudget('${b.id}','${b.category}',${budget})">Edit</button>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:${budget > 0 ? '6px' : '0'}">
-            <span style="color:${spent > 0 ? 'var(--red)' : 'var(--muted)'}">Spent: ${privVal(fmt(spent))}</span>
+            <span><span style="color:${spent > 0 ? 'var(--red)' : 'var(--muted)'}">${privVal(fmt(spent))}</span>${budget > 0 ? `<span style="color:var(--muted)"> / </span><span style="color:${budget - spent >= 0 ? 'var(--green)' : 'var(--red)'}">${privVal((budget - spent < 0 ? '-' : '') + fmt(budget - spent))}</span>` : ''}</span>
             <span style="color:var(--muted)">${budget > 0 ? 'Budget: ' + privVal(fmt(budget)) : 'No budget set'}</span>
           </div>
           ${budget > 0 ? `

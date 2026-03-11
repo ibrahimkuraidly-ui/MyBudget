@@ -954,7 +954,7 @@ async function loadBudget(silent = false) {
             <span style="font-size:11px;color:var(--muted)">Income − Fixed</span>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:${nsBudget > 0 ? '6px' : '0'}">
-            <span style="color:${nsSpent > 0 ? 'var(--red)' : 'var(--muted)'}">Spent: ${privVal(fmt(nsSpent))}</span>
+            <span><span style="color:${nsSpent > 0 ? 'var(--red)' : 'var(--muted)'}">${privVal(fmt(nsSpent))}</span>${nsBudget > 0 ? `<span style="color:var(--muted)"> / </span><span style="color:${nsBudget - nsSpent >= 0 ? 'var(--green)' : 'var(--red)'}">${privVal((nsBudget - nsSpent < 0 ? '-' : '') + fmt(nsBudget - nsSpent))}</span>` : ''}</span>
             <span style="color:var(--muted)">${nsBudget > 0 ? 'Budget: ' + privVal(fmt(nsBudget)) : 'Set income goal to see budget'}</span>
           </div>
           ${nsBudget > 0 ? `

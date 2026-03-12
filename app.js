@@ -718,11 +718,11 @@ async function loadDashboard(silent = false) {
           <div>
             <div class="card-title" style="margin-bottom:2px">Income</div>
             ${activeGoal
-              ? `<div style="font-size:22px;font-weight:800;color:var(--green)">${privVal(fmtS(activeGoal.limit_amount))}</div>
-                 ${cycleStart && cycleEnd ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">${fmtDate(cycleStart)} – ${fmtDate(cycleEnd)}</div>` : ''}`
-              : `<div style="font-size:13px;color:var(--muted)">Not set — tap to add your income cycle</div>`}
+              ? `<div style="font-size:22px;font-weight:800;color:var(--green)">${privVal(fmtS(activeGoal.limit_amount))}</div>`
+              : `<div style="font-size:13px;color:var(--muted)">Not set for this month</div>`}
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${fmtDate(cycleStart)} – ${fmtDate(cycleEnd)}</div>
           </div>
-          <button class="btn btn-sm btn-secondary" onclick="openSetIncome('${activeGoal ? activeGoal.id : ''}',${activeGoal ? activeGoal.limit_amount : 0},'${cycleStart || ''}','${cycleEnd || ''}')">${activeGoal ? 'Edit' : 'Set Income'}</button>
+          <button class="btn btn-sm btn-secondary" onclick="openSetIncome('${activeGoal ? activeGoal.id : ''}',${activeGoal ? activeGoal.limit_amount : 0},'${cycleStart}','${cycleEnd}')">${activeGoal ? 'Edit' : 'Set Income'}</button>
         </div>
         ${activeGoal && incomeGoalAmt ? `
         <div class="progress-bar"><div class="progress-fill ${pct(expenses, incomeGoalAmt) >= 100 ? 'over' : pct(expenses, incomeGoalAmt) >= 80 ? 'warn' : 'safe'}" style="width:${pct(expenses, incomeGoalAmt)}%"></div></div>

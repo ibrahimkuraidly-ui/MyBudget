@@ -992,13 +992,17 @@ async function loadBudget(silent = false) {
     budgets.forEach(b => { budgetMap[b.category] = b; });
     const ordered = BUDGET_ITEMS.map(cat => budgetMap[cat]).filter(Boolean);
 
-    // Active income goal
-    const today = new Date().toISOString().slice(0, 10);
+    // Active income goal — match against active month's cycle
+    const [by, bm] = _activeMonth.split('-').map(Number);
+    const bCycleStartY = bm === 1 ? by - 1 : by;
+    const bCycleStartM = bm === 1 ? 12 : bm - 1;
+    const bCycleStart = `${bCycleStartY}-${String(bCycleStartM).padStart(2, '0')}-25`;
+    const bCycleEnd   = `${_activeMonth}-24`;
     const activeGoal = allIncomeGoals.find(g => {
       if (!g.month.includes('_')) return false;
       const [s, e] = g.month.split('_');
-      return today >= s && today <= e;
-    }) || allIncomeGoals[0] || null;
+      return s <= bCycleEnd && e >= bCycleStart;
+    }) || null;
     const incomeGoalAmt = activeGoal ? parseFloat(activeGoal.limit_amount) : null;
     const totalBudgeted = ordered.reduce((s, b) => s + parseFloat(b.limit_amount), 0);
     const normalSpending = incomeGoalAmt != null ? incomeGoalAmt - totalBudgeted : null;

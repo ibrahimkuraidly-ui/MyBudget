@@ -630,17 +630,19 @@ async function loadDashboard(silent = false) {
       api('GET', 'transactions', `user_id=eq.${currentUserId}&type=eq.expense&select=amount,description,category`),
     ]);
 
-    const today = new Date().toISOString().slice(0, 10);
+    // Compute cycle range for the active month (25th of prev → 24th of this)
+    const [ay, am] = _activeMonth.split('-').map(Number);
+    const cycleStartY = am === 1 ? ay - 1 : ay;
+    const cycleStartM = am === 1 ? 12 : am - 1;
+    const cycleStart = `${cycleStartY}-${String(cycleStartM).padStart(2, '0')}-25`;
+    const cycleEnd   = `${_activeMonth}-24`;
+
+    // Find income goal matching this month's cycle
     const activeGoal = allIncomeGoals.find(g => {
       if (!g.month.includes('_')) return false;
       const [s, e] = g.month.split('_');
-      return today >= s && today <= e;
-    }) || allIncomeGoals[0] || null;
-
-    let cycleStart = null, cycleEnd = null;
-    if (activeGoal && activeGoal.month.includes('_')) {
-      [cycleStart, cycleEnd] = activeGoal.month.split('_');
-    }
+      return s <= cycleEnd && e >= cycleStart;
+    }) || null;
 
     const expenses       = txns.reduce((s, t) => s + parseFloat(t.amount), 0);
     const incomeGoalAmt  = activeGoal ? parseFloat(activeGoal.limit_amount) : null;

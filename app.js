@@ -449,21 +449,21 @@ function generateInsights() {
   const d = _dashData;
   const lines = [];
 
-  // Income & overall spending
+  // ── Spending Summary ──────────────────────────────────────────────────────
+  lines.push('<strong style="color:var(--accent);font-size:13px">Spending Summary</strong>');
+
   if (d.incomeGoalAmt) {
     const spentPct = Math.round((d.expenses / d.incomeGoalAmt) * 100);
     const remaining = d.incomeGoalAmt - d.expenses;
     lines.push(`You've spent ${fmtS(d.expenses)} (${spentPct}% of your ${fmtS(d.incomeGoalAmt)} income) this month. ${remaining >= 0 ? fmtS(remaining) + ' remaining.' : fmtS(Math.abs(remaining)) + ' over income.'}`);
   }
 
-  // Available flex budget
   if (d.flexRemaining != null) {
     lines.push(d.flexRemaining >= 0
       ? `Flexible budget (Normal Spending + Groceries + Sara Allowance): ${fmtS(d.flexRemaining)} left to spend.`
       : `You're ${fmtS(Math.abs(d.flexRemaining))} over your flexible budget.`);
   }
 
-  // Over-budget categories
   const overBudget = BUDGET_ITEMS.filter(cat => {
     const budget = d.budgetMap[cat] || 0;
     return budget > 0 && (d.byCat[cat] || 0) > budget;
@@ -471,20 +471,82 @@ function generateInsights() {
   if (overBudget.length) {
     overBudget.forEach(cat => {
       const over = (d.byCat[cat] || 0) - (d.budgetMap[cat] || 0);
-      lines.push(`${cat} is over budget by ${fmtS(over)}.`);
+      lines.push(`⚠ ${cat} is over budget by ${fmtS(over)}.`);
     });
   } else {
-    lines.push('No categories are over budget.');
+    lines.push('✓ No categories are over budget.');
   }
 
-  // Biggest spending category
   const topCat = Object.entries(d.byCat).filter(([k]) => k !== '__card_payment__').sort((a,b) => b[1]-a[1])[0];
   if (topCat) lines.push(`Biggest expense category: ${topCat[0]} at ${fmtS(topCat[1])}.`);
 
-  // Card utilization
   const coUtil = Math.round((d.coBalance / 7000) * 100);
   const secUtil = Math.round((d.secBalance / 1000) * 100);
   lines.push(`Capital One: ${fmtS(d.coBalance)} (${coUtil}% utilization). Secure: ${fmtS(d.secBalance)} (${secUtil}% utilization).`);
+
+  // ── Budget Efficiency Analysis ────────────────────────────────────────────
+  if (d.incomeGoalAmt) {
+    const income = d.incomeGoalAmt;
+
+    lines.push('<hr style="border:none;border-top:1px solid var(--border);margin:6px 0"><strong style="color:var(--accent);font-size:13px">Budget Efficiency</strong>');
+
+    // Savings rate
+    const savingsBudget = d.budgetMap['Savings'] || 0;
+    const savingsPct = Math.round((savingsBudget / income) * 100);
+    if (savingsBudget === 0) {
+      lines.push(`⚠ No savings budget set. Experts recommend saving at least 20% of income — that's ${fmtS(income * 0.2)}/month.`);
+    } else if (savingsPct < 10) {
+      lines.push(`⚠ Savings rate is ${savingsPct}% (${fmtS(savingsBudget)}). This is too low — aim for at least 20% (${fmtS(income * 0.2)}/month) for financial security.`);
+    } else if (savingsPct < 20) {
+      lines.push(`Savings rate is ${savingsPct}% (${fmtS(savingsBudget)}). Decent, but try to work toward 20% (${fmtS(income * 0.2)}/month).`);
+    } else {
+      lines.push(`✓ Strong savings rate: ${savingsPct}% of income (${fmtS(savingsBudget)}). You're meeting the 20% benchmark.`);
+    }
+
+    // Housing cost
+    const rent = d.budgetMap['Rent'] || 0;
+    if (rent > 0) {
+      const rentPct = Math.round((rent / income) * 100);
+      if (rentPct > 35) {
+        lines.push(`⚠ Rent is ${rentPct}% of your income (${fmtS(rent)}). This is above the recommended 30% threshold and may be straining your budget.`);
+      } else if (rentPct > 30) {
+        lines.push(`Rent is ${rentPct}% of income (${fmtS(rent)}) — slightly above the 30% guideline. Keep other expenses tight.`);
+      } else {
+        lines.push(`✓ Rent is ${rentPct}% of income (${fmtS(rent)}) — within the healthy ≤30% guideline.`);
+      }
+    }
+
+    // 50/30/20 breakdown
+    // Needs: fixed necessities | Wants: flexible spending | Savings: savings budget
+    const needsCats = ['Rent', 'Phone Bill', 'Electric Bill', 'Auto Insurance'];
+    const wantsCats = ['Groceries', 'Sara Allowance', 'Baba Allowance', 'Subscriptions'];
+    const needsBudget = needsCats.reduce((s, c) => s + (d.budgetMap[c] || 0), 0);
+    const wantsBudget = wantsCats.reduce((s, c) => s + (d.budgetMap[c] || 0), 0) + (d.nsBudget > 0 ? d.nsBudget : 0);
+    const needsPct   = Math.round((needsBudget / income) * 100);
+    const wantsPct   = Math.round((wantsBudget / income) * 100);
+
+    lines.push(`50/30/20 comparison — Needs: ${needsPct}% (target ≤50%), Wants: ${wantsPct}% (target ≤30%), Savings: ${savingsPct}% (target ≥20%).`);
+
+    // Overall verdict
+    const issues = [];
+    if (needsPct > 55)   issues.push(`fixed expenses are high at ${needsPct}% — look for ways to reduce bills or housing costs`);
+    if (wantsPct > 40)   issues.push(`flexible spending is high at ${wantsPct}% — consider trimming discretionary categories`);
+    if (savingsPct < 15) issues.push(`savings rate is low at ${savingsPct}% — try to increase your Savings budget`);
+
+    if (issues.length === 0) {
+      lines.push('✓ Your budget is well-structured and aligned with the 50/30/20 rule. Keep it up.');
+    } else {
+      lines.push(`Your budget could use some rebalancing: ${issues.join('; ')}.`);
+    }
+
+    // Unbudgeted categories with actual spending
+    const unbudgeted = BUDGET_ITEMS.filter(cat => !(d.budgetMap[cat] > 0) && (d.byCat[cat] || 0) > 0);
+    if (unbudgeted.length) {
+      lines.push(`⚠ You have spending in categories with no budget set: ${unbudgeted.join(', ')}. Setting budgets for these will give you better control.`);
+    }
+  } else {
+    lines.push('<hr style="border:none;border-top:1px solid var(--border);margin:6px 0"><span style="color:var(--muted)">Set an income goal to unlock budget efficiency analysis.</span>');
+  }
 
   el.innerHTML = lines.map(l => `<div style="margin-bottom:8px;font-size:13px;color:var(--text);line-height:1.5">${l}</div>`).join('');
 }

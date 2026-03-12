@@ -676,9 +676,24 @@ async function loadDashboard(silent = false) {
     const grocRemaining  = (budgetMap['Groceries'] || 0) - (byCat['Groceries'] || 0);
     const saraRemaining  = (budgetMap['Sara Allowance'] || 0) - (byCat['Sara Allowance'] || 0);
     const flexRemaining  = nsRemaining != null ? nsRemaining + grocRemaining + saraRemaining : null;
-    const budgetCycleEnd = new Date(_activeMonth + '-24T12:00:00');
+    const budgetCycleStartDate = new Date(cycleStart + 'T12:00:00');
+    const budgetCycleEnd       = new Date(cycleEnd   + 'T12:00:00');
     const todayMid = new Date(); todayMid.setHours(12, 0, 0, 0);
-    const daysLeft = Math.round((budgetCycleEnd - todayMid) / 86400000) + 1;
+    const totalCycleDays = Math.round((budgetCycleEnd - budgetCycleStartDate) / 86400000) + 1;
+    let daysLeft, daysLabel;
+    if (todayMid < budgetCycleStartDate) {
+      // Future cycle — use total days, no countdown yet
+      daysLeft  = totalCycleDays;
+      daysLabel = `${totalCycleDays} day${totalCycleDays !== 1 ? 's' : ''} in cycle`;
+    } else if (todayMid <= budgetCycleEnd) {
+      // Active cycle — count down from today
+      daysLeft  = Math.round((budgetCycleEnd - todayMid) / 86400000) + 1;
+      daysLabel = `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`;
+    } else {
+      // Past cycle — hide
+      daysLeft  = 0;
+      daysLabel = null;
+    }
     const perDay = flexRemaining != null && daysLeft > 0 ? flexRemaining / daysLeft : null;
 
     // Budget alerts (only items actually over their limit)

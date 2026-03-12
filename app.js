@@ -1059,7 +1059,10 @@ async function loadBudget(silent = false) {
         <div class="card" style="margin-bottom:8px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
             <div style="font-size:15px;font-weight:700">${b.category}</div>
-            <button class="btn btn-sm btn-secondary" onclick="openEditBudget('${b.id}','${b.category}',${budget})">Edit</button>
+            <div style="display:flex;gap:4px">
+              <button class="btn btn-sm btn-secondary" onclick="copyFromLastMonth('${b.id}','${b.category}')" title="Copy from last month">↩ Last</button>
+              <button class="btn btn-sm btn-secondary" onclick="openEditBudget('${b.id}','${b.category}',${budget})">Edit</button>
+            </div>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:${budget > 0 ? '6px' : '0'}">
             <span><span style="color:${spent > 0 ? 'var(--red)' : 'var(--muted)'}">${privVal(fmt(spent))}</span>${budget > 0 ? `<span style="color:var(--muted)"> / </span><span style="color:${budget - spent >= 0 ? 'var(--green)' : 'var(--red)'}">${privVal((budget - spent < 0 ? '-' : '') + fmt(budget - spent))}</span>` : ''}</span>
